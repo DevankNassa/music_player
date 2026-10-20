@@ -19,3 +19,6 @@ builds fall back to the debug signing key.
 ## Status
 
 Early planning. Spec sheet in progress.
+
+## Run app
+flutter run -d linux
