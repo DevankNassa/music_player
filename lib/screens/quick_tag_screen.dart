@@ -4,12 +4,8 @@ import 'package:provider/provider.dart';
 import '../models/song.dart';
 import '../state/library_store.dart';
 import '../state/queue_player.dart';
-
-String _formatDuration(Duration d) {
-  final minutes = d.inMinutes.remainder(60).toString();
-  final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-  return '$minutes:$seconds';
-}
+import '../widgets/playback_controls.dart';
+import '../widgets/seek_bar.dart';
 
 class QuickTagScreen extends StatelessWidget {
   const QuickTagScreen({super.key});
@@ -109,59 +105,8 @@ class QuickTagScreen extends StatelessWidget {
             ],
           ),
           const Spacer(),
-          Builder(
-            builder: (context) {
-              final duration = queuePlayer.duration;
-              final position = queuePlayer.position;
-              final seekable = duration > Duration.zero;
-              final clampedMs = position.inMilliseconds
-                  .clamp(0, seekable ? duration.inMilliseconds : 0)
-                  .toDouble();
-              return Column(
-                children: [
-                  Slider(
-                    value: clampedMs,
-                    max: seekable ? duration.inMilliseconds.toDouble() : 1,
-                    onChanged: seekable
-                        ? (value) => queuePlayer.seek(Duration(milliseconds: value.round()))
-                        : null,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(_formatDuration(position)),
-                        Text(_formatDuration(duration)),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                iconSize: 36,
-                onPressed: queuePlayer.hasPrevious ? queuePlayer.previous : null,
-                icon: const Icon(Icons.skip_previous),
-              ),
-              IconButton(
-                iconSize: 56,
-                onPressed: queuePlayer.togglePlayPause,
-                icon: Icon(
-                  queuePlayer.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-                ),
-              ),
-              IconButton(
-                iconSize: 36,
-                onPressed: queuePlayer.hasNext ? queuePlayer.next : null,
-                icon: const Icon(Icons.skip_next),
-              ),
-            ],
-          ),
+          SeekBar(queuePlayer: queuePlayer),
+          PlaybackControls(queuePlayer: queuePlayer),
         ],
       ),
     );

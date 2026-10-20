@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../state/queue_player.dart';
+import '../widgets/now_playing_bar.dart';
 import 'filter_switches_screen.dart';
 import 'library_screen.dart';
 import 'quick_tag_screen.dart';
@@ -22,15 +25,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final queuePlayer = context.watch<QueuePlayer>();
+    // Quick Tag has its own full player UI built in; showing the mini-bar
+    // there too would just duplicate it.
+    final showMiniPlayer = _index != 1;
+
     return Scaffold(
       body: IndexedStack(index: _index, children: _screens),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.library_music), label: 'Library'),
-          NavigationDestination(icon: Icon(Icons.label), label: 'Quick Tag'),
-          NavigationDestination(icon: Icon(Icons.tune), label: 'Filters'),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (showMiniPlayer) NowPlayingBar(queuePlayer: queuePlayer),
+          NavigationBar(
+            selectedIndex: _index,
+            onDestinationSelected: (i) => setState(() => _index = i),
+            destinations: const [
+              NavigationDestination(icon: Icon(Icons.library_music), label: 'Library'),
+              NavigationDestination(icon: Icon(Icons.label), label: 'Quick Tag'),
+              NavigationDestination(icon: Icon(Icons.tune), label: 'Filters'),
+            ],
+          ),
         ],
       ),
     );

@@ -21,6 +21,11 @@ void main() {
 
     await tester.tap(find.descendant(of: navBar, matching: find.text('Filters')));
     await tester.pumpAndSettle();
+    await tester.dragUntilVisible(
+      find.text('0 songs match'),
+      find.byType(Scrollable),
+      const Offset(0, -300),
+    );
     expect(find.text('0 songs match'), findsOneWidget);
   });
 }
