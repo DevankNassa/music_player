@@ -1,0 +1,2 @@
+/home/drunken/.pub-cache/hosted/pub.dev/audiotags-1.4.5/android/.cxx/Debug/6iq64352/arm64-v8a/CMakeFiles/edit_cache.dir
+/home/drunken/.pub-cache/hosted/pub.dev/audiotags-1.4.5/android/.cxx/Debug/6iq64352/arm64-v8a/CMakeFiles/rebuild_cache.dir

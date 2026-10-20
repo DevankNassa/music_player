@@ -1,0 +1,28 @@
+{
+  "buildFiles": [
+    "/home/drunken/Documents/github/music_player/third_party/audiotags/android/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/home/drunken/Android/Sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/home/drunken/Documents/github/music_player/third_party/audiotags/android/.cxx/Debug/5cz6h816/x86",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/home/drunken/Android/Sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/home/drunken/Documents/github/music_player/third_party/audiotags/android/.cxx/Debug/5cz6h816/x86",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {},
+  "toolchains": {
+    "toolchain": {
+      "cCompilerExecutable": "/home/drunken/Android/Sdk/ndk/28.2.13676358/toolchains/llvm/prebuilt/linux-x86_64/bin/clang.lld",
+      "cppCompilerExecutable": "/home/drunken/Android/Sdk/ndk/28.2.13676358/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++.lld"
+    }
+  },
+  "cFileExtensions": [],
+  "cppFileExtensions": []
+}

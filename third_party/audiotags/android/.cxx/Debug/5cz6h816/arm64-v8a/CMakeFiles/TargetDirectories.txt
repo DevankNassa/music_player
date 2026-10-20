@@ -1,0 +1,2 @@
+/home/drunken/Documents/github/music_player/third_party/audiotags/android/.cxx/Debug/5cz6h816/arm64-v8a/CMakeFiles/edit_cache.dir
+/home/drunken/Documents/github/music_player/third_party/audiotags/android/.cxx/Debug/5cz6h816/arm64-v8a/CMakeFiles/rebuild_cache.dir

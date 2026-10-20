@@ -1,0 +1,20 @@
+{
+  "buildFiles": [
+    "/home/drunken/.pub-cache/hosted/pub.dev/audiotags-1.4.5/android/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/home/drunken/Android/Sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/home/drunken/.pub-cache/hosted/pub.dev/audiotags-1.4.5/android/.cxx/Debug/6iq64352/x86",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/home/drunken/Android/Sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/home/drunken/.pub-cache/hosted/pub.dev/audiotags-1.4.5/android/.cxx/Debug/6iq64352/x86",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {}
+}

@@ -22,3 +22,8 @@ build/
 **/linux/flutter/ephemeral/
 **/windows/flutter/ephemeral/
 **/macos/Flutter/ephemeral/
+
+# Release signing secrets — never commit these
+android/key.properties
+android/app/*.keystore
+android/app/*.jks
