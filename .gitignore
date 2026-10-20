@@ -2,3 +2,23 @@
 node_modules/
 .env
 *.log
+
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.iml
+.idea/
+
+# Platform build outputs
+**/android/.gradle/
+**/android/local.properties
+**/ios/Flutter/.last_build_id
+**/ios/Pods/
+**/linux/flutter/ephemeral/
+**/windows/flutter/ephemeral/
+**/macos/Flutter/ephemeral/
