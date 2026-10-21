@@ -1,5 +1,7 @@
 package com.devanknassa.insta_playlist
 
-import io.flutter.embedding.android.FlutterActivity
+import com.ryanheise.audioservice.AudioServiceActivity
 
-class MainActivity : FlutterActivity()
+// audio_service needs the activity to share its FlutterEngine with the
+// background playback service that owns the media notification.
+class MainActivity : AudioServiceActivity()

@@ -55,8 +55,19 @@ class LibraryStore extends ChangeNotifier {
     _watchSubscriptions.add(sub);
   }
 
+  /// Throws [TagWriteException] if the file couldn't be written, so the UI
+  /// can tell the user instead of the tag silently not sticking.
   Future<void> setTags(Song song, Set<String> tags) async {
-    await TagService.writeTags(song.filePath, tags);
+    if (!await LibraryService.ensureWritePermission()) {
+      throw const TagWriteException(
+        'Allow "All files access" for Insta-Playlist in system settings to save tags.',
+      );
+    }
+    try {
+      await TagService.writeTags(song.filePath, tags);
+    } catch (e) {
+      throw TagWriteException("Couldn't save tags to this file: $e");
+    }
     final index = _songs.indexWhere((s) => s.filePath == song.filePath);
     if (index != -1) {
       _songs[index] = song.copyWith(tags: tags);
@@ -71,4 +82,12 @@ class LibraryStore extends ChangeNotifier {
     }
     super.dispose();
   }
+}
+
+class TagWriteException implements Exception {
+  final String message;
+  const TagWriteException(this.message);
+
+  @override
+  String toString() => message;
 }

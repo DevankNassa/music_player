@@ -49,6 +49,13 @@ class QueuePlayer extends ChangeNotifier {
     await _player.togglePlay(song.filePath);
   }
 
+  Future<void> play() async {
+    if (currentSong == null || isPlaying) return;
+    await _player.resume();
+  }
+
+  Future<void> pause() => _player.pause();
+
   Future<void> next() async {
     if (!hasNext) return;
     _index++;

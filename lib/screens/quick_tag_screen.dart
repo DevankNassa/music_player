@@ -10,6 +10,19 @@ import '../widgets/seek_bar.dart';
 class QuickTagScreen extends StatelessWidget {
   const QuickTagScreen({super.key});
 
+  Future<void> _saveTags(
+    BuildContext context,
+    Song song,
+    Set<String> tags,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await context.read<LibraryStore>().setTags(song, tags);
+    } on TagWriteException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
   Future<void> _promptNewTag(BuildContext context, Song song) async {
     final controller = TextEditingController();
     final newTag = await showDialog<String>(
@@ -37,8 +50,7 @@ class QuickTagScreen extends StatelessWidget {
     if (!context.mounted) return;
     final trimmed = newTag?.trim();
     if (trimmed == null || trimmed.isEmpty) return;
-    final updated = {...song.tags, trimmed};
-    await context.read<LibraryStore>().setTags(song, updated);
+    await _saveTags(context, song, {...song.tags, trimmed});
   }
 
   @override
@@ -81,30 +93,35 @@ class QuickTagScreen extends StatelessWidget {
           const SizedBox(height: 24),
           Text('Tags', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              ...allTags.map((tag) {
-                final applied = current.tags.contains(tag);
-                return FilterChip(
-                  label: Text(tag),
-                  selected: applied,
-                  onSelected: (selected) {
-                    final updated = {...current.tags};
-                    selected ? updated.add(tag) : updated.remove(tag);
-                    context.read<LibraryStore>().setTags(current, updated);
-                  },
-                );
-              }),
-              ActionChip(
-                avatar: const Icon(Icons.add, size: 18),
-                label: const Text('New tag'),
-                onPressed: () => _promptNewTag(context, current),
+          // Tags are unlimited, so let them scroll rather than push the
+          // playback controls off screen.
+          Expanded(
+            child: SingleChildScrollView(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ...allTags.map((tag) {
+                    final applied = current.tags.contains(tag);
+                    return FilterChip(
+                      label: Text(tag),
+                      selected: applied,
+                      onSelected: (selected) {
+                        final updated = {...current.tags};
+                        selected ? updated.add(tag) : updated.remove(tag);
+                        _saveTags(context, current, updated);
+                      },
+                    );
+                  }),
+                  ActionChip(
+                    avatar: const Icon(Icons.add, size: 18),
+                    label: const Text('New tag'),
+                    onPressed: () => _promptNewTag(context, current),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-          const Spacer(),
           SeekBar(queuePlayer: queuePlayer),
           PlaybackControls(queuePlayer: queuePlayer),
         ],

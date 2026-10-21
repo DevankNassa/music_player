@@ -22,6 +22,17 @@ class LibraryService {
     return (await Permission.storage.request()).isGranted;
   }
 
+  /// Writing tags into files another app saved (e.g. Downloads) needs
+  /// "All files access" on Android 11+; READ_MEDIA_AUDIO only allows
+  /// reading them. Requesting it opens the system settings toggle.
+  static Future<bool> ensureWritePermission() async {
+    if (!Platform.isAndroid) return true;
+    if (await Permission.manageExternalStorage.isGranted) return true;
+    if ((await Permission.manageExternalStorage.request()).isGranted) return true;
+    // Android 10 and below have no "All files access"; storage covers writes.
+    return (await Permission.storage.request()).isGranted;
+  }
+
   /// Opens the system file picker for audio files and returns a [Song] for
   /// each one picked, with metadata (title/artist/tags) read from the file.
   static Future<List<Song>> pickSongs() async {

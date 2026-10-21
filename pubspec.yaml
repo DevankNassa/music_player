@@ -40,6 +40,7 @@ dependencies:
   path: ^1.9.1
   audioplayers: ^6.8.1
   provider: ^6.1.5+1
+  audio_service: ^0.18.19
 
 # audiotags' published Android build.gradle pins compileSdkVersion 31, which
 # conflicts with other plugins' androidx deps requiring 33-34+. Vendored a
