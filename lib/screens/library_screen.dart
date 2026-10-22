@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -80,7 +82,13 @@ class _LibraryScreenState extends State<LibraryScreen> {
           ? Center(
               child: _loading
                   ? const CircularProgressIndicator()
-                  : const Text('No songs yet. Tap + to add some.'),
+                  : Text(
+                      Platform.isIOS
+                          ? 'No songs yet. In the Files app, copy songs into\n'
+                              'On My iPhone › Insta Playlist and they appear here.'
+                          : 'No songs yet. Tap + to add some.',
+                      textAlign: TextAlign.center,
+                    ),
             )
           : ListView.builder(
               itemCount: songs.length,

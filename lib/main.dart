@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'screens/home_screen.dart';
@@ -24,19 +26,30 @@ Future<void> main() async {
       ),
     );
   }
-  runApp(InstaPlaylistApp(queuePlayer: queuePlayer));
+  final libraryStore = LibraryStore();
+  // iOS has no shared music folder: songs live in the app's own Documents
+  // folder (visible in the Files app), so load and watch it automatically.
+  if (Platform.isIOS) {
+    final documents = await getApplicationDocumentsDirectory();
+    unawaited(libraryStore.addFolder(documents.path));
+  }
+  runApp(InstaPlaylistApp(queuePlayer: queuePlayer, libraryStore: libraryStore));
 }
 
 class InstaPlaylistApp extends StatelessWidget {
   final QueuePlayer? queuePlayer;
+  final LibraryStore? libraryStore;
 
-  const InstaPlaylistApp({super.key, this.queuePlayer});
+  const InstaPlaylistApp({super.key, this.queuePlayer, this.libraryStore});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => LibraryStore()),
+        if (libraryStore != null)
+          ChangeNotifierProvider.value(value: libraryStore!)
+        else
+          ChangeNotifierProvider(create: (_) => LibraryStore()),
         if (queuePlayer != null)
           ChangeNotifierProvider.value(value: queuePlayer!)
         else

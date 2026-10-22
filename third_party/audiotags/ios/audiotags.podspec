@@ -5,7 +5,9 @@ lib_url = "https://github.com/erikas-taroza/audiotags/releases/download/v#{versi
 `
 mkdir Frameworks
 cd Frameworks
-if [ ! -d ios.zip ]d
+# Patched: upstream had a typo here ("]d") that made the check always
+# fail, so the binary was never downloaded and iOS builds failed to link.
+if [ ! -d audiotags.xcframework ]
 then
   curl -L "#{lib_url}" -o ios.zip
   unzip ios.zip -d 'audiotags.xcframework'

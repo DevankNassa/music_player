@@ -42,6 +42,7 @@ class LibraryStore extends ChangeNotifier {
   }
 
   void _watchFolder(String folderPath) {
+    if (!FileSystemEntity.isWatchSupported) return;
     final sub = Directory(folderPath)
         .watch(events: FileSystemEvent.create, recursive: true)
         .listen((event) async {
