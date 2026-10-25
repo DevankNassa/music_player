@@ -1,87 +1,61 @@
-#include <stdbool.h>
+// Patched: the published iOS glue was generated for flutter_rust_bridge v1
+// (wire_read, drop_dart_object, ...), but the prebuilt libaudiotags.a it
+// downloads is built with flutter_rust_bridge v2 and exports different
+// symbols, so the app failed to link. This references the v2 exports instead
+// so the linker keeps them for Dart FFI to look up at runtime. Only the
+// addresses are used, so the signatures are intentionally opaque.
 #include <stdint.h>
-#include <stdlib.h>
-typedef struct _Dart_Handle* Dart_Handle;
 
-typedef struct DartCObject DartCObject;
-
-typedef int64_t DartPort;
-
-typedef bool (*DartPostCObjectFnType)(DartPort port_id, void *message);
-
-typedef struct wire_uint_8_list {
-  uint8_t *ptr;
-  int32_t len;
-} wire_uint_8_list;
-
-typedef struct wire_Picture {
-  int32_t picture_type;
-  int32_t *mime_type;
-  struct wire_uint_8_list *bytes;
-} wire_Picture;
-
-typedef struct wire_list_picture {
-  struct wire_Picture *ptr;
-  int32_t len;
-} wire_list_picture;
-
-typedef struct wire_Tag {
-  struct wire_uint_8_list *title;
-  struct wire_uint_8_list *track_artist;
-  struct wire_uint_8_list *album;
-  struct wire_uint_8_list *album_artist;
-  uint32_t *year;
-  struct wire_uint_8_list *genre;
-  uint32_t *track_number;
-  uint32_t *track_total;
-  uint32_t *disc_number;
-  uint32_t *disc_total;
-  struct wire_uint_8_list *lyrics;
-  uint32_t *duration;
-  struct wire_list_picture *pictures;
-} wire_Tag;
-
-typedef struct DartCObject *WireSyncReturn;
-
-void store_dart_post_cobject(DartPostCObjectFnType ptr);
-
-Dart_Handle get_dart_object(uintptr_t ptr);
-
-void drop_dart_object(uintptr_t ptr);
-
-uintptr_t new_dart_opaque(Dart_Handle handle);
-
-intptr_t init_frb_dart_api_dl(void *obj);
-
-void wire_read(int64_t port_, struct wire_uint_8_list *path);
-
-void wire_write(int64_t port_, struct wire_uint_8_list *path, struct wire_Tag *data);
-
-int32_t *new_box_autoadd_mime_type_0(int32_t value);
-
-struct wire_Tag *new_box_autoadd_tag_0(void);
-
-uint32_t *new_box_autoadd_u32_0(uint32_t value);
-
-struct wire_list_picture *new_list_picture_0(int32_t len);
-
-struct wire_uint_8_list *new_uint_8_list_0(int32_t len);
-
-void free_WireSyncReturn(WireSyncReturn ptr);
+void frb_get_rust_content_hash(void);
+void frb_pde_ffi_dispatcher_primary(void);
+void frb_pde_ffi_dispatcher_sync(void);
+void frb_dart_fn_deliver_output(void);
+void frb_dart_opaque_dart2rust_encode(void);
+void frb_dart_opaque_drop_thread_box_persistent_handle(void);
+void frb_dart_opaque_rust2dart_decode(void);
+void frb_free_wire_sync_rust2dart_dco(void);
+void frb_free_wire_sync_rust2dart_sse(void);
+void frb_init_frb_dart_api_dl(void);
+void frb_rust_vec_u8_free(void);
+void frb_rust_vec_u8_new(void);
+void frb_rust_vec_u8_resize(void);
+void store_dart_post_cobject(void);
+void free_zero_copy_buffer_f32(void);
+void free_zero_copy_buffer_f64(void);
+void free_zero_copy_buffer_i8(void);
+void free_zero_copy_buffer_i16(void);
+void free_zero_copy_buffer_i32(void);
+void free_zero_copy_buffer_i64(void);
+void free_zero_copy_buffer_u8(void);
+void free_zero_copy_buffer_u16(void);
+void free_zero_copy_buffer_u32(void);
+void free_zero_copy_buffer_u64(void);
 
 static int64_t dummy_method_to_enforce_bundling(void) {
     int64_t dummy_var = 0;
-    dummy_var ^= ((int64_t) (void*) wire_read);
-    dummy_var ^= ((int64_t) (void*) wire_write);
-    dummy_var ^= ((int64_t) (void*) new_box_autoadd_mime_type_0);
-    dummy_var ^= ((int64_t) (void*) new_box_autoadd_tag_0);
-    dummy_var ^= ((int64_t) (void*) new_box_autoadd_u32_0);
-    dummy_var ^= ((int64_t) (void*) new_list_picture_0);
-    dummy_var ^= ((int64_t) (void*) new_uint_8_list_0);
-    dummy_var ^= ((int64_t) (void*) free_WireSyncReturn);
+    dummy_var ^= ((int64_t) (void*) frb_get_rust_content_hash);
+    dummy_var ^= ((int64_t) (void*) frb_pde_ffi_dispatcher_primary);
+    dummy_var ^= ((int64_t) (void*) frb_pde_ffi_dispatcher_sync);
+    dummy_var ^= ((int64_t) (void*) frb_dart_fn_deliver_output);
+    dummy_var ^= ((int64_t) (void*) frb_dart_opaque_dart2rust_encode);
+    dummy_var ^= ((int64_t) (void*) frb_dart_opaque_drop_thread_box_persistent_handle);
+    dummy_var ^= ((int64_t) (void*) frb_dart_opaque_rust2dart_decode);
+    dummy_var ^= ((int64_t) (void*) frb_free_wire_sync_rust2dart_dco);
+    dummy_var ^= ((int64_t) (void*) frb_free_wire_sync_rust2dart_sse);
+    dummy_var ^= ((int64_t) (void*) frb_init_frb_dart_api_dl);
+    dummy_var ^= ((int64_t) (void*) frb_rust_vec_u8_free);
+    dummy_var ^= ((int64_t) (void*) frb_rust_vec_u8_new);
+    dummy_var ^= ((int64_t) (void*) frb_rust_vec_u8_resize);
     dummy_var ^= ((int64_t) (void*) store_dart_post_cobject);
-    dummy_var ^= ((int64_t) (void*) get_dart_object);
-    dummy_var ^= ((int64_t) (void*) drop_dart_object);
-    dummy_var ^= ((int64_t) (void*) new_dart_opaque);
+    dummy_var ^= ((int64_t) (void*) free_zero_copy_buffer_f32);
+    dummy_var ^= ((int64_t) (void*) free_zero_copy_buffer_f64);
+    dummy_var ^= ((int64_t) (void*) free_zero_copy_buffer_i8);
+    dummy_var ^= ((int64_t) (void*) free_zero_copy_buffer_i16);
+    dummy_var ^= ((int64_t) (void*) free_zero_copy_buffer_i32);
+    dummy_var ^= ((int64_t) (void*) free_zero_copy_buffer_i64);
+    dummy_var ^= ((int64_t) (void*) free_zero_copy_buffer_u8);
+    dummy_var ^= ((int64_t) (void*) free_zero_copy_buffer_u16);
+    dummy_var ^= ((int64_t) (void*) free_zero_copy_buffer_u32);
+    dummy_var ^= ((int64_t) (void*) free_zero_copy_buffer_u64);
     return dummy_var;
 }

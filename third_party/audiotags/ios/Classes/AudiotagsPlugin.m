@@ -1,5 +1,5 @@
 #import "AudiotagsPlugin.h"
-#import "../Runner/bridge_generated.h"
+#import "bridge_generated.h"
 #if __has_include(<audiotags/audiotags-Swift.h>)
 #import <audiotags/audiotags-Swift.h>
 #else
