@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
+
 import 'rust/frb_generated.dart';
 
 import 'rust/api/api.dart' as api;
@@ -11,13 +15,24 @@ export 'rust/api/error.dart';
 class AudioTags {
   static bool _initialized = false;
 
+  static Future<void> _ensureInitialized() async {
+    if (_initialized) return;
+    // Patched: on iOS the default loader looks for a dynamic
+    // `audiotags.framework`, but the plugin ships libaudiotags.a as a static
+    // framework linked into the app binary, so loading always failed and
+    // every read/write threw. Resolve the symbols from the process instead.
+    await RustLib.init(
+      externalLibrary: Platform.isIOS
+          ? ExternalLibrary.process(iKnowHowToUseIt: true)
+          : null,
+    );
+    _initialized = true;
+  }
+
   /// Read the metadata at the given path. Returns
   /// a [Tag] or null if there is no metadata.
   static Future<Tag?> read(String path) async {
-    if (!_initialized) {
-      await RustLib.init();
-      _initialized = true;
-    }
+    await _ensureInitialized();
 
     try {
       return await api.read(path: path);
@@ -36,10 +51,7 @@ class AudioTags {
   ///
   /// Can throw a [AudioTagsError].
   static Future<void> write(String path, Tag tag) async {
-    if (!_initialized) {
-      await RustLib.init();
-      _initialized = true;
-    }
+    await _ensureInitialized();
 
     return await api.write(path: path, data: tag);
   }

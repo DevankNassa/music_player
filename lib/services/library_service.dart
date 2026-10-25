@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:audiotags/audiotags.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
 
@@ -33,6 +35,8 @@ class LibraryService {
     return (await Permission.storage.request()).isGranted;
   }
 
+  static const _iosFolders = MethodChannel('insta_playlist/music_folders');
+
   /// Opens the system file picker for audio files and returns a [Song] for
   /// each one picked, with metadata (title/artist/tags) read from the file.
   static Future<List<Song>> pickSongs() async {
@@ -49,27 +53,52 @@ class LibraryService {
 
   /// Opens the system folder picker and returns its path, or null if
   /// canceled or audio permission was denied.
+  ///
+  /// On iOS the folder (e.g. a Syncthing folder) is remembered with a
+  /// security-scoped bookmark so it stays readable and taggable in place
+  /// across launches; see MusicFolderAccess in ios/Runner/AppDelegate.swift.
   static Future<String?> pickFolder() async {
+    if (Platform.isIOS) return _iosFolders.invokeMethod<String>('pickFolder');
     if (!await ensureAudioPermission()) return null;
     return FilePicker.getDirectoryPath();
   }
 
+  /// iOS only: regains access to the folders picked in earlier sessions and
+  /// returns their paths.
+  static Future<List<String>> restoreFolders() async {
+    if (!Platform.isIOS) return [];
+    return await _iosFolders.invokeListMethod<String>('restoreFolders') ?? [];
+  }
+
   /// Recursively scans a folder for audio files and loads each as a [Song].
   static Future<List<Song>> scanFolder(String folderPath) async {
-    final dir = Directory(folderPath);
-    if (!dir.existsSync()) return [];
-
     final songs = <Song>[];
-    await for (final entity in dir.list(recursive: true, followLinks: false)) {
-      if (entity is File && isAudioFile(entity.path)) {
-        songs.add(await loadSongFromPath(entity.path));
-      }
+    for (final path in await listAudioFiles(folderPath)) {
+      songs.add(await loadSongFromPath(path));
     }
     return songs;
   }
 
+  /// Paths of the audio files anywhere under [folderPath], without reading
+  /// their metadata.
+  static Future<List<String>> listAudioFiles(String folderPath) async {
+    final dir = Directory(folderPath);
+    if (!dir.existsSync()) return [];
+
+    final paths = <String>[];
+    await for (final entity in dir.list(recursive: true, followLinks: false)) {
+      if (entity is File && isAudioFile(entity.path)) paths.add(entity.path);
+    }
+    return paths;
+  }
+
   static Future<Song> loadSongFromPath(String filePath) async {
-    final tag = await TagService.readRawTag(filePath);
+    // A file with unreadable metadata is still playable, so add it under
+    // its file name rather than failing the whole add.
+    Tag? tag;
+    try {
+      tag = await TagService.readRawTag(filePath);
+    } catch (_) {}
     final fileName = p.basenameWithoutExtension(filePath);
     return Song(
       filePath: filePath,

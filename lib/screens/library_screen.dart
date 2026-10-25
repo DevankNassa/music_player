@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../services/library_service.dart';
@@ -19,10 +20,18 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   Future<void> _addSongs() async {
     setState(() => _loading = true);
-    final picked = await LibraryService.pickSongs();
-    if (!mounted) return;
-    context.read<LibraryStore>().addSongs(picked);
-    setState(() => _loading = false);
+    try {
+      final picked = await LibraryService.pickSongs();
+      if (!mounted) return;
+      context.read<LibraryStore>().addSongs(picked);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Couldn't add songs: $e")),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   Future<void> _addFolder() async {
@@ -35,7 +44,16 @@ class _LibraryScreenState extends State<LibraryScreen> {
       );
       return;
     }
-    final folder = await LibraryService.pickFolder();
+    final String? folder;
+    try {
+      folder = await LibraryService.pickFolder();
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Couldn't open that folder: ${e.message}")),
+      );
+      return;
+    }
     if (folder == null || !mounted) return;
     setState(() => _loading = true);
     await context.read<LibraryStore>().addFolder(folder);
@@ -44,6 +62,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Future<void> _showAddSheet() async {
+    // iOS hands back individually picked songs as throwaway copies, so tags
+    // wouldn't reach the originals; a picked folder is tagged in place.
+    if (Platform.isIOS) return _addFolder();
     final choice = await showModalBottomSheet<_AddChoice>(
       context: context,
       builder: (context) => SafeArea(
@@ -84,8 +105,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   ? const CircularProgressIndicator()
                   : Text(
                       Platform.isIOS
-                          ? 'No songs yet. In the Files app, copy songs into\n'
-                              'On My iPhone › Insta Playlist and they appear here.'
+                          ? 'No songs yet. Tap + to choose your music\n'
+                              'folder, e.g. your Syncthing folder.'
                           : 'No songs yet. Tap + to add some.',
                       textAlign: TextAlign.center,
                     ),

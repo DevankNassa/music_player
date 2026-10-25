@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'screens/home_screen.dart';
+import 'services/library_service.dart';
 import 'services/media_notification_handler.dart';
 import 'state/library_store.dart';
 import 'state/queue_player.dart';
@@ -27,12 +28,17 @@ Future<void> main() async {
     );
   }
   final libraryStore = LibraryStore();
-  // iOS has no shared music folder: songs live in the app's own Documents
-  // folder (visible in the Files app), so load and watch it automatically.
+  // iOS has no shared music folder: load the app's own Documents folder
+  // (visible in the Files app) plus any folders picked in earlier sessions,
+  // e.g. a Syncthing folder.
   if (Platform.isIOS) {
     final documents = await getApplicationDocumentsDirectory();
     unawaited(libraryStore.addFolder(documents.path));
+    for (final folder in await LibraryService.restoreFolders()) {
+      unawaited(libraryStore.addFolder(folder));
+    }
   }
+  AppLifecycleListener(onResume: libraryStore.rescanFolders);
   runApp(InstaPlaylistApp(queuePlayer: queuePlayer, libraryStore: libraryStore));
 }
 

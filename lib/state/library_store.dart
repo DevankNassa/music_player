@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
 
 import '../models/song.dart';
 import '../services/library_service.dart';
@@ -39,6 +40,32 @@ class LibraryStore extends ChangeNotifier {
       _watchedFolders.add(folderPath);
       _watchFolder(folderPath);
     }
+  }
+
+  /// Picks up songs added to or deleted from the folders while the app
+  /// wasn't watching, e.g. synced by Syncthing while in the background, or
+  /// on iOS, where folders can't be watched at all.
+  Future<void> rescanFolders() async {
+    final onDisk = <String>{};
+    for (final folder in _watchedFolders) {
+      onDisk.addAll(await LibraryService.listAudioFiles(folder));
+    }
+
+    final before = _songs.length;
+    _songs.removeWhere((s) {
+      final inFolder = _watchedFolders.any((f) => p.isWithin(f, s.filePath));
+      final gone = inFolder && !onDisk.contains(s.filePath);
+      if (gone) _knownPaths.remove(s.filePath);
+      return gone;
+    });
+    var changed = _songs.length != before;
+
+    for (final path in onDisk) {
+      if (!_knownPaths.add(path)) continue;
+      _songs.add(await LibraryService.loadSongFromPath(path));
+      changed = true;
+    }
+    if (changed) notifyListeners();
   }
 
   void _watchFolder(String folderPath) {
