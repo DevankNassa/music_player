@@ -46,6 +46,14 @@ class _FilterSwitchesScreenState extends State<FilterSwitchesScreen> {
     setState(() => _switches[emptyIndex].tag = tag);
   }
 
+  /// Frees every fader, back to an empty switchboard.
+  void _reset() => setState(() {
+    for (final sw in _switches) {
+      sw.tag = null;
+      sw.position = SwitchPosition.neutral;
+    }
+  });
+
   void _setPosition(FilterSwitch sw, SwitchPosition position) =>
       setState(() => sw.position = position);
 
@@ -75,8 +83,17 @@ class _FilterSwitchesScreenState extends State<FilterSwitchesScreen> {
         ),
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(22, 12, 22, 0),
-            child: Text('Mix', style: Organic.headingStyle(30)),
+            padding: const EdgeInsets.fromLTRB(22, 12, 14, 0),
+            child: Row(
+              children: [
+                Expanded(child: Text('Mix', style: Organic.headingStyle(30))),
+                TextButton.icon(
+                  onPressed: slotsLeft == _switchCount ? null : _reset,
+                  icon: const Icon(Icons.restart_alt_rounded, size: 18),
+                  label: const Text('Reset'),
+                ),
+              ],
+            ),
           ),
           Container(
             margin: const EdgeInsets.fromLTRB(14, 12, 14, 0),
@@ -260,8 +277,8 @@ class _Fader extends StatelessWidget {
   }
 }
 
-/// "Play songs tagged [chill] but never [explicit]." Each tag is a chip
-/// that cycles its fader when tapped.
+/// "Play songs tagged [chill] and any of [rap] [pop] but never [explicit]."
+/// Each tag is a chip that cycles its fader when tapped.
 class _MixSentence extends StatelessWidget {
   final List<FilterSwitch> switches;
   final ValueChanged<FilterSwitch> onCycle;
@@ -271,50 +288,60 @@ class _MixSentence extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final required = switches.where((s) => s.tag != null && s.position == SwitchPosition.require);
+    final anyOf = switches.where((s) => s.tag != null && s.position == SwitchPosition.neutral);
     final excluded = switches.where((s) => s.tag != null && s.position == SwitchPosition.exclude);
     final style = Organic.headingStyle(21, height: 1.65);
     const muted = TextStyle(color: Organic.neutral500);
 
-    InlineSpan chip(FilterSwitch sw, {required bool excluded}) => WidgetSpan(
-      alignment: PlaceholderAlignment.middle,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 3),
-        child: Material(
-          color: excluded ? Organic.accent : Organic.accent2_600,
-          shape: const StadiumBorder(),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: () => onCycle(sw),
-            child: Container(
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Center(
-                widthFactor: 1,
-                child: Text(
-                  sw.tag!,
-                  style: Organic.headingStyle(17, color: Organic.neutral100, height: 1).copyWith(
-                    decoration: excluded ? TextDecoration.lineThrough : null,
-                    decorationColor: Organic.neutral100,
-                    decorationThickness: 2,
+    InlineSpan chip(FilterSwitch sw) {
+      final excluded = sw.position == SwitchPosition.exclude;
+      return WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 3),
+          child: Material(
+            color: switch (sw.position) {
+              SwitchPosition.require => Organic.accent2_600,
+              SwitchPosition.neutral => Organic.neutral500,
+              SwitchPosition.exclude => Organic.accent,
+            },
+            shape: const StadiumBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => onCycle(sw),
+              child: Container(
+                height: 32,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Center(
+                  widthFactor: 1,
+                  child: Text(
+                    sw.tag!,
+                    style: Organic.headingStyle(17, color: Organic.neutral100, height: 1).copyWith(
+                      decoration: excluded ? TextDecoration.lineThrough : null,
+                      decorationColor: Organic.neutral100,
+                      decorationThickness: 2,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      );
+    }
 
     return Text.rich(
       TextSpan(
         style: style,
         children: [
           const TextSpan(text: 'Play songs tagged '),
-          if (required.isEmpty) const TextSpan(text: 'anything', style: muted),
-          for (final sw in required) chip(sw, excluded: false),
+          if (required.isEmpty && anyOf.isEmpty) const TextSpan(text: 'anything', style: muted),
+          for (final sw in required) chip(sw),
+          if (anyOf.isNotEmpty) TextSpan(text: required.isEmpty ? 'any of ' : ' and any of '),
+          for (final sw in anyOf) chip(sw),
           const TextSpan(text: ' but never '),
           if (excluded.isEmpty) const TextSpan(text: 'nothing', style: muted),
-          for (final sw in excluded) chip(sw, excluded: true),
+          for (final sw in excluded) chip(sw),
           const TextSpan(text: '.'),
         ],
       ),

@@ -11,7 +11,7 @@ IDs (permanent once published, never shown to users):
 
 ## 1. Accounts (start now, verification takes days)
 
-- [ ] **Apple Developer Program**: enroll as an individual at
+- [x] **Apple Developer Program**: enroll as an individual at
       https://developer.apple.com/programs/ ($99/year, Apple ID with 2FA).
       Approval usually takes 1–2 days.
 - [ ] **Google Play Console**: create a *personal* account at

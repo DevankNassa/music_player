@@ -47,17 +47,17 @@ Each switch is bound to one tag. Each switch has three positions:
 | Position | Effect |
 |---|---|
 | **Require** (on) | Only songs carrying this tag are eligible. |
-| **Neutral** (middle, default) | This tag has no effect on eligibility. |
+| **Any** (middle, default) | Songs must carry at least one of the tags set to Any. |
 | **Exclude** (off) | Songs carrying this tag are removed from eligibility. |
 
-Example from the "Drake" case: Require → only Drake songs; Neutral → doesn't matter if it's Drake or not; Exclude → no Drake songs.
+Example from the "Drake" case: Require → only Drake songs; Any → Drake songs, plus songs with any other tag set to Any; Exclude → no Drake songs.
 
 ### Combining switches
 
 All switches apply simultaneously as an AND across independent constraints:
 
-- A song is eligible only if it has **every** tag whose switch is set to Require, **and** has **none** of the tags whose switch is set to Exclude.
-- Switches set to Neutral impose no constraint.
+- A song is eligible only if it has **every** tag whose switch is set to Require, **and** at least **one** of the tags whose switch is set to Any (if any are), **and** has **none** of the tags whose switch is set to Exclude.
+- Switches set to Any combine as a union (OR) with each other. Empty switches impose no constraint.
 
 ### Open questions (not yet decided)
 
