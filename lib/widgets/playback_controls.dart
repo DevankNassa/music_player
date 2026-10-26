@@ -1,42 +1,45 @@
 import 'package:flutter/material.dart';
 
 import '../state/queue_player.dart';
+import '../theme/organic.dart';
+import 'organic.dart';
 
-/// Prev / play-pause / next row bound to a [QueuePlayer].
+/// The Player's centred transport: outlined prev / big accent play-pause /
+/// outlined next, bound to a [QueuePlayer].
 class PlaybackControls extends StatelessWidget {
   final QueuePlayer queuePlayer;
-  final double playPauseSize;
-  final double sideButtonSize;
 
-  const PlaybackControls({
-    super.key,
-    required this.queuePlayer,
-    this.playPauseSize = 56,
-    this.sideButtonSize = 36,
-  });
+  const PlaybackControls({super.key, required this.queuePlayer});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        IconButton(
-          iconSize: sideButtonSize,
+        RoundIconButton(
+          icon: Icons.skip_previous_rounded,
+          tooltip: 'Previous',
+          size: 54,
+          iconSize: 26,
           onPressed: queuePlayer.hasPrevious ? queuePlayer.previous : null,
-          icon: const Icon(Icons.skip_previous),
         ),
-        IconButton(
-          iconSize: playPauseSize,
+        const SizedBox(width: 22),
+        RoundIconButton(
+          icon: queuePlayer.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+          tooltip: queuePlayer.isPlaying ? 'Pause' : 'Play',
+          kind: RoundButtonKind.primary,
+          size: 78,
+          iconSize: 36,
+          shadow: Organic.shadowMd,
           onPressed: queuePlayer.togglePlayPause,
-          icon: Icon(
-            queuePlayer.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-          ),
         ),
-        IconButton(
-          iconSize: sideButtonSize,
+        const SizedBox(width: 22),
+        RoundIconButton(
+          icon: Icons.skip_next_rounded,
+          tooltip: 'Next',
+          size: 54,
+          iconSize: 26,
           onPressed: queuePlayer.hasNext ? queuePlayer.next : null,
-          icon: const Icon(Icons.skip_next),
         ),
       ],
     );

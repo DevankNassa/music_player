@@ -1,6 +1,7 @@
 import 'package:audio_service/audio_service.dart';
 
 import '../state/queue_player.dart';
+import 'disc_artwork.dart';
 
 /// Mirrors [QueuePlayer] into the system media session, which gives the
 /// app a media controls notification (and lock-screen / headset-button
@@ -14,9 +15,17 @@ class MediaNotificationHandler extends BaseAudioHandler with SeekHandler {
   bool? _lastPlaying;
   Duration? _lastDuration;
 
+  /// Same disc artwork for every song; the files have no cover art of
+  /// their own that the app reads.
+  Uri? _artUri;
+
   MediaNotificationHandler(this._queuePlayer) {
     _queuePlayer.addListener(_sync);
     _sync();
+    discArtworkUri().then((uri) {
+      _artUri = uri;
+      if (uri != null) _pushMediaItem();
+    });
   }
 
   /// QueuePlayer notifies on every position tick; only push to the media
@@ -28,14 +37,7 @@ class MediaNotificationHandler extends BaseAudioHandler with SeekHandler {
     final duration = _queuePlayer.duration;
 
     if (song?.filePath != _lastPath || duration != _lastDuration) {
-      mediaItem.add(song == null
-          ? null
-          : MediaItem(
-              id: song.filePath,
-              title: song.title,
-              artist: song.artist,
-              duration: duration == Duration.zero ? null : duration,
-            ));
+      _pushMediaItem();
     }
 
     if (song?.filePath != _lastPath ||
@@ -47,6 +49,20 @@ class MediaNotificationHandler extends BaseAudioHandler with SeekHandler {
     _lastPath = song?.filePath;
     _lastPlaying = playing;
     _lastDuration = duration;
+  }
+
+  void _pushMediaItem() {
+    final song = _queuePlayer.currentSong;
+    final duration = _queuePlayer.duration;
+    mediaItem.add(song == null
+        ? null
+        : MediaItem(
+            id: song.filePath,
+            title: song.title,
+            artist: song.artist,
+            duration: duration == Duration.zero ? null : duration,
+            artUri: _artUri,
+          ));
   }
 
   void _broadcastState() {

@@ -33,6 +33,14 @@ class QueuePlayer extends ChangeNotifier {
   bool get hasPrevious => _queue.isNotEmpty && _index > 0;
   Duration get position => _position;
   Duration get duration => _duration;
+  int get queueIndex => _index;
+  int get queueLength => _queue.length;
+
+  /// How far through the current song, 0..1 (0 until the duration is known).
+  double get progress {
+    if (_duration <= Duration.zero) return 0;
+    return (_position.inMilliseconds / _duration.inMilliseconds).clamp(0.0, 1.0);
+  }
 
   Future<void> seek(Duration position) => _player.seek(position);
 

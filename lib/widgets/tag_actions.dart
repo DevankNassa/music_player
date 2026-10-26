@@ -16,34 +16,11 @@ Future<void> saveTags(BuildContext context, Song song, Set<String> tags) async {
   }
 }
 
-/// Asks for a new tag name and adds it to [song].
-Future<void> promptNewTag(BuildContext context, Song song) async {
-  final controller = TextEditingController();
-  final newTag = await showDialog<String>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('New tag'),
-      content: TextField(
-        controller: controller,
-        autofocus: true,
-        decoration: const InputDecoration(hintText: 'e.g. family-road-trip'),
-        onSubmitted: (value) => Navigator.of(context).pop(value),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(controller.text),
-          child: const Text('Add'),
-        ),
-      ],
-    ),
-  );
-  if (!context.mounted) return;
-  final trimmed = newTag?.trim();
-  if (trimmed == null || trimmed.isEmpty) return;
+/// Adds a tag typed into one of the inline "New tag" fields to [song].
+/// Blank input is ignored.
+Future<void> addNewTag(BuildContext context, Song song, String name) async {
+  final trimmed = name.trim();
+  if (trimmed.isEmpty) return;
   await saveTags(context, song, {...song.tags, trimmed});
 }
 

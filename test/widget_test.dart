@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:insta_playlist/main.dart';
@@ -7,29 +6,24 @@ void main() {
   testWidgets('App launches to the library tab', (WidgetTester tester) async {
     await tester.pumpWidget(const InstaPlaylistApp());
 
-    expect(find.widgetWithText(AppBar, 'Library'), findsOneWidget);
-    expect(find.text('No songs yet. Tap + to add some.'), findsOneWidget);
+    expect(find.text('+ Add'), findsOneWidget);
+    expect(find.text('No songs yet. Tap + Add to add some.'), findsOneWidget);
   });
 
-  testWidgets('Bottom nav switches to the other tabs', (WidgetTester tester) async {
+  testWidgets('Tab bar switches to the other tabs', (WidgetTester tester) async {
     await tester.pumpWidget(const InstaPlaylistApp());
-    final navBar = find.byType(NavigationBar);
 
-    await tester.tap(find.descendant(of: navBar, matching: find.text('Player')));
+    await tester.tap(find.text('Player'));
     await tester.pumpAndSettle();
     expect(find.text('Nothing playing. Add songs in the Library tab.'), findsOneWidget);
 
-    await tester.tap(find.descendant(of: navBar, matching: find.text('Quick Tag')));
+    await tester.tap(find.text('Tag'));
     await tester.pumpAndSettle();
     expect(find.text('Add songs in the Library tab first.'), findsOneWidget);
 
-    await tester.tap(find.descendant(of: navBar, matching: find.text('Filters')));
+    await tester.tap(find.text('Mix'));
     await tester.pumpAndSettle();
-    await tester.dragUntilVisible(
-      find.text('0 songs match'),
-      find.byType(Scrollable),
-      const Offset(0, -300),
-    );
-    expect(find.text('0 songs match'), findsOneWidget);
+    expect(find.text('songs match'), findsOneWidget);
+    expect(find.text('No tags yet. Tag some songs in the Tag tab first.'), findsOneWidget);
   });
 }
