@@ -29,14 +29,15 @@ Future<void> main() async {
   }
   final libraryStore = LibraryStore();
   // iOS has no shared music folder: load the app's own Documents folder
-  // (visible in the Files app) plus any folders picked in earlier sessions,
-  // e.g. a Syncthing folder.
+  // (visible in the Files app).
   if (Platform.isIOS) {
     final documents = await getApplicationDocumentsDirectory();
     unawaited(libraryStore.addFolder(documents.path));
-    for (final folder in await LibraryService.restoreFolders()) {
-      unawaited(libraryStore.addFolder(folder));
-    }
+  }
+  // Folders picked in earlier sessions, e.g. a Syncthing folder (iOS and
+  // desktop only).
+  for (final folder in await LibraryService.restoreFolders()) {
+    unawaited(libraryStore.addFolder(folder));
   }
   AppLifecycleListener(onResume: libraryStore.rescanFolders);
   runApp(InstaPlaylistApp(queuePlayer: queuePlayer, libraryStore: libraryStore));

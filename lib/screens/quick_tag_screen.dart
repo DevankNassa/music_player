@@ -1,57 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/song.dart';
 import '../state/library_store.dart';
 import '../state/queue_player.dart';
 import '../widgets/playback_controls.dart';
 import '../widgets/seek_bar.dart';
+import '../widgets/tag_actions.dart';
 
 class QuickTagScreen extends StatelessWidget {
   const QuickTagScreen({super.key});
-
-  Future<void> _saveTags(
-    BuildContext context,
-    Song song,
-    Set<String> tags,
-  ) async {
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      await context.read<LibraryStore>().setTags(song, tags);
-    } on TagWriteException catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
-    }
-  }
-
-  Future<void> _promptNewTag(BuildContext context, Song song) async {
-    final controller = TextEditingController();
-    final newTag = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('New tag'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: 'e.g. family-road-trip'),
-          onSubmitted: (value) => Navigator.of(context).pop(value),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text),
-            child: const Text('Add'),
-          ),
-        ],
-      ),
-    );
-    if (!context.mounted) return;
-    final trimmed = newTag?.trim();
-    if (trimmed == null || trimmed.isEmpty) return;
-    await _saveTags(context, song, {...song.tags, trimmed});
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,12 +31,7 @@ class QuickTagScreen extends StatelessWidget {
       );
     }
 
-    // Tags can change while the song plays; always read the current
-    // value from the library, not the (possibly stale) queued copy.
-    final current = library.firstWhere(
-      (s) => s.filePath == playing.filePath,
-      orElse: () => playing,
-    );
+    final current = currentLibraryCopy(libraryStore, playing);
     final allTags = libraryStore.allTags;
 
     return Padding(
@@ -109,21 +61,21 @@ class QuickTagScreen extends StatelessWidget {
                       onSelected: (selected) {
                         final updated = {...current.tags};
                         selected ? updated.add(tag) : updated.remove(tag);
-                        _saveTags(context, current, updated);
+                        saveTags(context, current, updated);
                       },
                     );
                   }),
                   ActionChip(
                     avatar: const Icon(Icons.add, size: 18),
                     label: const Text('New tag'),
-                    onPressed: () => _promptNewTag(context, current),
+                    onPressed: () => promptNewTag(context, current),
                   ),
                 ],
               ),
             ),
           ),
           SeekBar(queuePlayer: queuePlayer),
-          PlaybackControls(queuePlayer: queuePlayer),
+          Center(child: PlaybackControls(queuePlayer: queuePlayer)),
         ],
       ),
     );

@@ -15,6 +15,10 @@ void main() {
     await tester.pumpWidget(const InstaPlaylistApp());
     final navBar = find.byType(NavigationBar);
 
+    await tester.tap(find.descendant(of: navBar, matching: find.text('Player')));
+    await tester.pumpAndSettle();
+    expect(find.text('Nothing playing. Add songs in the Library tab.'), findsOneWidget);
+
     await tester.tap(find.descendant(of: navBar, matching: find.text('Quick Tag')));
     await tester.pumpAndSettle();
     expect(find.text('Add songs in the Library tab first.'), findsOneWidget);

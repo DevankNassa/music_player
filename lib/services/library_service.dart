@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:audiotags/audiotags.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../models/song.dart';
@@ -60,14 +62,44 @@ class LibraryService {
   static Future<String?> pickFolder() async {
     if (Platform.isIOS) return _iosFolders.invokeMethod<String>('pickFolder');
     if (!await ensureAudioPermission()) return null;
-    return FilePicker.getDirectoryPath();
+    final folder = await FilePicker.getDirectoryPath();
+    if (folder != null && _isDesktop) await _rememberDesktopFolder(folder);
+    return folder;
   }
 
-  /// iOS only: regains access to the folders picked in earlier sessions and
-  /// returns their paths.
+  /// Returns the folders picked in earlier sessions, so the library comes
+  /// back on launch. On iOS this also regains access to them.
   static Future<List<String>> restoreFolders() async {
-    if (!Platform.isIOS) return [];
-    return await _iosFolders.invokeListMethod<String>('restoreFolders') ?? [];
+    if (Platform.isIOS) {
+      return await _iosFolders.invokeListMethod<String>('restoreFolders') ?? [];
+    }
+    if (!_isDesktop) return [];
+    return (await _readDesktopFolders()).where((f) => Directory(f).existsSync()).toList();
+  }
+
+  static bool get _isDesktop => Platform.isLinux || Platform.isWindows || Platform.isMacOS;
+
+  /// Desktop has no bookmark mechanism to lean on; picked folder paths are
+  /// just kept in a JSON list in the app support directory.
+  static Future<File> _desktopFoldersFile() async =>
+      File(p.join((await getApplicationSupportDirectory()).path, 'music_folders.json'));
+
+  static Future<List<String>> _readDesktopFolders() async {
+    try {
+      final file = await _desktopFoldersFile();
+      if (!file.existsSync()) return [];
+      return List<String>.from(jsonDecode(await file.readAsString()) as List);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<void> _rememberDesktopFolder(String folder) async {
+    final folders = await _readDesktopFolders();
+    if (folders.contains(folder)) return;
+    final file = await _desktopFoldersFile();
+    await file.parent.create(recursive: true);
+    await file.writeAsString(jsonEncode([...folders, folder]));
   }
 
   /// Recursively scans a folder for audio files and loads each as a [Song].

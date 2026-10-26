@@ -13,8 +13,9 @@ import '../services/tag_service.dart';
 /// in-memory reflection of what's on disk for the songs added this run.
 ///
 /// Folders added via [addFolder] are watched for new files for the rest of
-/// the session (not persisted across app restarts yet), so dropping a new
-/// track into a watched folder adds it automatically.
+/// the session, so dropping a new track into a watched folder adds it
+/// automatically. Picked folders are restored on launch on iOS and desktop
+/// (see LibraryService.restoreFolders).
 class LibraryStore extends ChangeNotifier {
   final List<Song> _songs = [];
   final Set<String> _knownPaths = {};

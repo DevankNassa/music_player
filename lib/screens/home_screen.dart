@@ -5,6 +5,7 @@ import '../state/queue_player.dart';
 import '../widgets/now_playing_bar.dart';
 import 'filter_switches_screen.dart';
 import 'library_screen.dart';
+import 'player_screen.dart';
 import 'quick_tag_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   static const _screens = [
     LibraryScreen(),
+    _TabScaffold(title: 'Player', child: PlayerScreen()),
     _TabScaffold(title: 'Quick Tag', child: QuickTagScreen()),
     _TabScaffold(title: 'Filters', child: FilterSwitchesScreen()),
   ];
@@ -26,9 +28,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final queuePlayer = context.watch<QueuePlayer>();
-    // Quick Tag has its own full player UI built in; showing the mini-bar
-    // there too would just duplicate it.
-    final showMiniPlayer = _index != 1;
+    // Player and Quick Tag have their own full player UI built in; showing
+    // the mini-bar there too would just duplicate it.
+    final showMiniPlayer = _index != 1 && _index != 2;
 
     return Scaffold(
       body: IndexedStack(index: _index, children: _screens),
@@ -41,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onDestinationSelected: (i) => setState(() => _index = i),
             destinations: const [
               NavigationDestination(icon: Icon(Icons.library_music), label: 'Library'),
+              NavigationDestination(icon: Icon(Icons.play_circle), label: 'Player'),
               NavigationDestination(icon: Icon(Icons.label), label: 'Quick Tag'),
               NavigationDestination(icon: Icon(Icons.tune), label: 'Filters'),
             ],

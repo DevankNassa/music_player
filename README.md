@@ -22,3 +22,14 @@ Early planning. Spec sheet in progress.
 
 ## Run app
 flutter run -d linux
+
+## Install on Linux
+
+```
+./scripts/install-linux.sh
+```
+
+Builds a release, installs it to `~/.local/share/insta-playlist`, and adds an
+"Insta-Playlist" app launcher entry and an `insta-playlist` command. Re-run it
+to update. Needs `zenity` (file dialogs) and the GStreamer plugins
+(`gst-plugins-good`, `gst-libav`) for playback.
