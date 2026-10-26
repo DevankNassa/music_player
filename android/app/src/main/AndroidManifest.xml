@@ -4,11 +4,9 @@
          files, which get their own SAF grant automatically). -->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
-    <!-- Tags are written into the song files themselves, but files saved by
-         other apps (e.g. Downloads) are read-only under scoped storage
-         unless the user grants "All files access". -->
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
-        tools:ignore="ScopedStorage"/>
+    <!-- No "All files access" (Play only allows it for file managers etc.):
+         tags are written back through the picked folder's document-tree
+         grant instead; see MusicFolderAccess in MainActivity.kt. -->
     <!-- Background playback + the media controls notification (audio_service). -->
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>

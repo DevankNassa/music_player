@@ -44,8 +44,7 @@ Future<void> main() async {
     final documents = await getApplicationDocumentsDirectory();
     unawaited(libraryStore.addFolder(documents.path));
   }
-  // Folders picked in earlier sessions, e.g. a Syncthing folder (iOS and
-  // desktop only).
+  // Folders picked in earlier sessions, e.g. a Syncthing folder.
   for (final folder in await LibraryService.restoreFolders()) {
     unawaited(libraryStore.addFolder(folder));
   }

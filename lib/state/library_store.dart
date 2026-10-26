@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../models/song.dart';
 import '../services/library_service.dart';
@@ -14,8 +15,8 @@ import '../services/tag_service.dart';
 ///
 /// Folders added via [addFolder] are watched for new files for the rest of
 /// the session, so dropping a new track into a watched folder adds it
-/// automatically. Picked folders are restored on launch on iOS and desktop
-/// (see LibraryService.restoreFolders).
+/// automatically. Picked folders are restored on launch (see
+/// LibraryService.restoreFolders).
 class LibraryStore extends ChangeNotifier {
   final List<Song> _songs = [];
   final Set<String> _knownPaths = {};
@@ -87,13 +88,8 @@ class LibraryStore extends ChangeNotifier {
   /// Throws [TagWriteException] if the file couldn't be written, so the UI
   /// can tell the user instead of the tag silently not sticking.
   Future<void> setTags(Song song, Set<String> tags) async {
-    if (!await LibraryService.ensureWritePermission()) {
-      throw const TagWriteException(
-        'Allow "All files access" for Insta-Playlist in system settings to save tags.',
-      );
-    }
     try {
-      await TagService.writeTags(song.filePath, tags);
+      await _writeTags(song.filePath, tags);
     } catch (e) {
       throw TagWriteException("Couldn't save tags to this file: $e");
     }
@@ -101,6 +97,24 @@ class LibraryStore extends ChangeNotifier {
     if (index != -1) {
       _songs[index] = song.copyWith(tags: tags);
       notifyListeners();
+    }
+  }
+
+  /// Android blocks path writes to files another app (e.g. Syncthing)
+  /// created, so the tags go into a temp copy that's then written back
+  /// through the picked folder's grant.
+  static Future<void> _writeTags(String filePath, Set<String> tags) async {
+    if (!Platform.isAndroid) return TagService.writeTags(filePath, tags);
+    final temp = File(p.join(
+      (await getTemporaryDirectory()).path,
+      'tagging-${DateTime.now().microsecondsSinceEpoch}${p.extension(filePath)}',
+    ));
+    await File(filePath).copy(temp.path);
+    try {
+      await TagService.writeTags(temp.path, tags);
+      await LibraryService.writeBack(filePath, temp.path);
+    } finally {
+      await temp.delete();
     }
   }
 

@@ -26,18 +26,11 @@ class LibraryService {
     return (await Permission.storage.request()).isGranted;
   }
 
-  /// Writing tags into files another app saved (e.g. Downloads) needs
-  /// "All files access" on Android 11+; READ_MEDIA_AUDIO only allows
-  /// reading them. Requesting it opens the system settings toggle.
-  static Future<bool> ensureWritePermission() async {
-    if (!Platform.isAndroid) return true;
-    if (await Permission.manageExternalStorage.isGranted) return true;
-    if ((await Permission.manageExternalStorage.request()).isGranted) return true;
-    // Android 10 and below have no "All files access"; storage covers writes.
-    return (await Permission.storage.request()).isGranted;
-  }
+  /// Picked mobile folders: MusicFolderAccess in ios/Runner/AppDelegate.swift
+  /// and android/app/src/main/kotlin/.../MainActivity.kt.
+  static const _folders = MethodChannel('insta_playlist/music_folders');
 
-  static const _iosFolders = MethodChannel('insta_playlist/music_folders');
+  static bool get _isMobile => Platform.isIOS || Platform.isAndroid;
 
   /// Opens the system file picker for audio files and returns a [Song] for
   /// each one picked, with metadata (title/artist/tags) read from the file.
@@ -56,12 +49,13 @@ class LibraryService {
   /// Opens the system folder picker and returns its path, or null if
   /// canceled or audio permission was denied.
   ///
-  /// On iOS the folder (e.g. a Syncthing folder) is remembered with a
-  /// security-scoped bookmark so it stays readable and taggable in place
-  /// across launches; see MusicFolderAccess in ios/Runner/AppDelegate.swift.
+  /// On mobile the folder (e.g. a Syncthing folder) is remembered natively
+  /// so it stays readable and taggable in place across launches: a
+  /// security-scoped bookmark on iOS, a persisted document-tree grant on
+  /// Android.
   static Future<String?> pickFolder() async {
-    if (Platform.isIOS) return _iosFolders.invokeMethod<String>('pickFolder');
     if (!await ensureAudioPermission()) return null;
+    if (_isMobile) return _folders.invokeMethod<String>('pickFolder');
     final folder = await FilePicker.getDirectoryPath();
     if (folder != null && _isDesktop) await _rememberDesktopFolder(folder);
     return folder;
@@ -70,12 +64,18 @@ class LibraryService {
   /// Returns the folders picked in earlier sessions, so the library comes
   /// back on launch. On iOS this also regains access to them.
   static Future<List<String>> restoreFolders() async {
-    if (Platform.isIOS) {
-      return await _iosFolders.invokeListMethod<String>('restoreFolders') ?? [];
+    if (_isMobile) {
+      return await _folders.invokeListMethod<String>('restoreFolders') ?? [];
     }
     if (!_isDesktop) return [];
     return (await _readDesktopFolders()).where((f) => Directory(f).existsSync()).toList();
   }
+
+  /// Android only: replaces the song file at [path] with the contents of
+  /// [source]. Paths can't write to files another app (e.g. Syncthing)
+  /// created, but the picked folder's grant can.
+  static Future<void> writeBack(String path, String source) =>
+      _folders.invokeMethod('writeBack', {'path': path, 'source': source});
 
   static bool get _isDesktop => Platform.isLinux || Platform.isWindows || Platform.isMacOS;
 

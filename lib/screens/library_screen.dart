@@ -64,9 +64,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Future<void> _showAddSheet() async {
-    // iOS hands back individually picked songs as throwaway copies, so tags
-    // wouldn't reach the originals; a picked folder is tagged in place.
-    if (Platform.isIOS) return _addFolder();
+    // iOS and Android hand back individually picked songs as throwaway
+    // copies, so tags wouldn't reach the originals; a picked folder is
+    // tagged in place.
+    if (Platform.isIOS || Platform.isAndroid) return _addFolder();
     final choice = await showOrganicSheet<_AddChoice>(
       context: context,
       builder: (context) => Column(
@@ -133,7 +134,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                         : Padding(
                             padding: const EdgeInsets.all(24),
                             child: Text(
-                              Platform.isIOS
+                              Platform.isIOS || Platform.isAndroid
                                   ? 'No songs yet. Tap + Add to choose your music\n'
                                         'folder, e.g. your Syncthing folder.'
                                   : 'No songs yet. Tap + Add to add some.',
