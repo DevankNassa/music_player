@@ -24,7 +24,7 @@ cp ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png "$ico
 cat > "$apps_dir/$app_id.desktop" <<DESKTOP
 [Desktop Entry]
 Type=Application
-Name=Insta-Playlist
+Name=Instant Playlist
 Comment=Music player that builds playlists from your tags
 Exec=$install_dir/insta_playlist
 Icon=$app_id
@@ -34,4 +34,4 @@ Terminal=false
 DESKTOP
 
 update-desktop-database "$apps_dir" 2>/dev/null || true
-echo "Installed to $install_dir (launcher entry: Insta-Playlist, command: insta-playlist)"
+echo "Installed to $install_dir (launcher entry: Instant Playlist, command: insta-playlist)"

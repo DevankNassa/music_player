@@ -4,14 +4,14 @@ import 'package:insta_playlist/main.dart';
 
 void main() {
   testWidgets('App launches to the library tab', (WidgetTester tester) async {
-    await tester.pumpWidget(const InstaPlaylistApp());
+    await tester.pumpWidget(const InstantPlaylistApp());
 
     expect(find.text('+ Add'), findsOneWidget);
     expect(find.text('No songs yet. Tap + Add to add some.'), findsOneWidget);
   });
 
   testWidgets('Tab bar switches to the other tabs', (WidgetTester tester) async {
-    await tester.pumpWidget(const InstaPlaylistApp());
+    await tester.pumpWidget(const InstantPlaylistApp());
 
     await tester.tap(find.text('Player'));
     await tester.pumpAndSettle();

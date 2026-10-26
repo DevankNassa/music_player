@@ -6,7 +6,7 @@ title: Privacy Policy
 
 _Last updated: 26 October 2026_
 
-Insta Playlist ("the app") is a music player for audio files you already
+Instant Playlist ("the app") is a music player for audio files you already
 have on your device. This policy explains what the app does with your data.
 
 ## Data we collect

@@ -1,6 +1,6 @@
 import 'package:audiotags/audiotags.dart';
 
-/// Reads/writes Insta-Playlist tags using the song file's own metadata.
+/// Reads/writes Instant Playlist tags using the song file's own metadata.
 ///
 /// Tags are stored in the standard "genre" field (ID3 TCON / equivalent),
 /// semicolon-separated, since that's the metadata field closest in meaning

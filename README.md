@@ -1,6 +1,6 @@
-# Insta-Playlist
+# Instant Playlist
 
-A music player that builds playlists on the fly based on rules you set — language, explicit content, mood, genre, and more. Working name, subject to change.
+A music player that builds playlists on the fly based on rules you set — language, explicit content, mood, genre, and more.
 
 ## Build
 
@@ -30,6 +30,6 @@ flutter run -d linux
 ```
 
 Builds a release, installs it to `~/.local/share/insta-playlist`, and adds an
-"Insta-Playlist" app launcher entry and an `insta-playlist` command. Re-run it
+"Instant Playlist" app launcher entry and an `insta-playlist` command. Re-run it
 to update. Needs `zenity` (file dialogs) and the GStreamer plugins
 (`gst-plugins-good`, `gst-libav`) for playback.

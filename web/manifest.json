@@ -1,6 +1,6 @@
 {
-    "name": "insta_playlist",
-    "short_name": "insta_playlist",
+    "name": "Instant Playlist",
+    "short_name": "Instant Playlist",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

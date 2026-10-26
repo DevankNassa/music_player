@@ -49,14 +49,14 @@ Future<void> main() async {
     unawaited(libraryStore.addFolder(folder));
   }
   AppLifecycleListener(onResume: libraryStore.rescanFolders);
-  runApp(InstaPlaylistApp(queuePlayer: queuePlayer, libraryStore: libraryStore));
+  runApp(InstantPlaylistApp(queuePlayer: queuePlayer, libraryStore: libraryStore));
 }
 
-class InstaPlaylistApp extends StatelessWidget {
+class InstantPlaylistApp extends StatelessWidget {
   final QueuePlayer? queuePlayer;
   final LibraryStore? libraryStore;
 
-  const InstaPlaylistApp({super.key, this.queuePlayer, this.libraryStore});
+  const InstantPlaylistApp({super.key, this.queuePlayer, this.libraryStore});
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +72,7 @@ class InstaPlaylistApp extends StatelessWidget {
           ChangeNotifierProvider(create: (_) => QueuePlayer()),
       ],
       child: MaterialApp(
-        title: 'Insta-Playlist',
+        title: 'Instant Playlist',
         // The Organic design system only defines a light palette.
         theme: organicTheme(),
         home: const HomeScreen(),

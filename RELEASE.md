@@ -44,12 +44,10 @@ Done:
       (`.github/workflows/ios-release.yml`).
 - [x] Privacy policy page: `docs/privacy-policy.md`.
 
-Waiting on decisions:
-- [ ] **Final app name.** "Insta" is a Meta trademark, and Apple rejects
-      names that imitate another brand (guideline 5.2). Rename everywhere it shows:
-      `android:label` in `AndroidManifest.xml`, `CFBundleDisplayName` and
-      `CFBundleName` in `ios/Runner/Info.plist`, `MaterialApp.title` in
-      `lib/main.dart`, `docs/privacy-policy.md`, and the store listings.
+- [x] **App name: Instant Playlist.** Replaces "Insta Playlist", since
+      "Insta" is a Meta trademark and Apple rejects names that imitate
+      another brand (guideline 5.2). Internal IDs above keep the old spelling,
+      which is fine since users never see them.
 - [x] **App icon.** The "disc + tag" mock (`assets/icon/app_icon.svg`),
       rendered for every platform by `scripts/generate_icons.py`. The
       1024×1024 iOS icon has no transparency, as Apple requires.
@@ -119,14 +117,14 @@ Developer portal (https://developer.apple.com/account):
       ```
       (Pick a strong export password; it becomes a secret below.)
 - [ ] Profiles → **+** → Distribution *App Store Connect* → the app ID →
-      the certificate → name it e.g. `Insta Playlist App Store` → download.
+      the certificate → name it e.g. `Instant Playlist App Store` → download.
 
 App Store Connect (https://appstoreconnect.apple.com):
 - [ ] Users and Access → Integrations → App Store Connect API → Team Keys →
       generate a key with role *App Manager*. Note the **Key ID** and
       **Issuer ID**, and download `AuthKey_<id>.p8` (downloadable only once).
 - [ ] Apps → **+** New App → iOS, name, language, bundle ID, SKU (any
-      string, e.g. `instaplaylist`).
+      string, e.g. `instantplaylist`).
 - [ ] Add GitHub secrets (from `~/ios-signing`):
       ```sh
       base64 -w0 dist.p12 | gh secret set IOS_DIST_CERT_P12_BASE64

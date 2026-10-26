@@ -1,4 +1,4 @@
-# Insta-Playlist — Spec Sheet
+# Instant Playlist — Spec Sheet
 
 ## Overview
 
