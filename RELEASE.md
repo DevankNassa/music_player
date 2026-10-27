@@ -5,7 +5,7 @@ off (`[x]`) as they're done.
 
 IDs (permanent once published, never shown to users):
 - Android application ID: `com.devanknassa.insta_playlist`
-- iOS bundle ID: `com.devanknassa.instaPlaylist`
+- iOS bundle ID: `com.devanknassa.instantPlaylist`
 
 ---
 
@@ -54,11 +54,11 @@ Done:
 
 ## 3. Privacy policy hosting
 
-- [ ] GitHub repo → Settings → Pages → *Deploy from a branch* → `master`,
-      folder `/docs`.
-- [ ] Check it loads at
-      https://devanknassa.github.io/music_player/privacy-policy.html
-      (this URL goes in both store listings).
+- [x] Hosted on the portfolio site (repo `DevankNassa/portfolio`, file
+      `instant-playlist/privacy.html`, HTTPS enforced):
+      https://www.devank.dev/instant-playlist/privacy.html
+      (this URL goes in both store listings). `docs/privacy-policy.md` here
+      is the source text; keep the two in sync.
 
 ## 4. Android: Google Play
 
@@ -100,7 +100,7 @@ Play Console → Create app (name, default language, App, Free):
 
 Developer portal (https://developer.apple.com/account):
 - [ ] Identifiers → **+** → App IDs → App → Bundle ID (explicit)
-      `com.devanknassa.instaPlaylist`. No extra capabilities needed.
+      `com.devanknassa.instantPlaylist`. No extra capabilities needed.
 - [ ] Create a distribution certificate from Linux:
       ```sh
       mkdir -p ~/ios-signing && cd ~/ios-signing   # keep this folder private
