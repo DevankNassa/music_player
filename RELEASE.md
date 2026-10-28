@@ -99,9 +99,9 @@ Play Console → Create app (name, default language, App, Free):
 ## 5. iOS: App Store (no Mac needed)
 
 Developer portal (https://developer.apple.com/account):
-- [ ] Identifiers → **+** → App IDs → App → Bundle ID (explicit)
+- [x] Identifiers → **+** → App IDs → App → Bundle ID (explicit)
       `com.devanknassa.instantPlaylist`. No extra capabilities needed.
-- [ ] Create a distribution certificate from Linux:
+- [x] Create a distribution certificate from Linux:
       ```sh
       mkdir -p ~/ios-signing && cd ~/ios-signing   # keep this folder private
       openssl genrsa -out dist.key 2048
@@ -116,16 +116,16 @@ Developer portal (https://developer.apple.com/account):
       openssl pkcs12 -export -legacy -inkey dist.key -in dist.pem -out dist.p12
       ```
       (Pick a strong export password; it becomes a secret below.)
-- [ ] Profiles → **+** → Distribution *App Store Connect* → the app ID →
+- [x] Profiles → **+** → Distribution *App Store Connect* → the app ID →
       the certificate → name it e.g. `Instant Playlist App Store` → download.
 
 App Store Connect (https://appstoreconnect.apple.com):
-- [ ] Users and Access → Integrations → App Store Connect API → Team Keys →
+- [x] Users and Access → Integrations → App Store Connect API → Team Keys →
       generate a key with role *App Manager*. Note the **Key ID** and
       **Issuer ID**, and download `AuthKey_<id>.p8` (downloadable only once).
-- [ ] Apps → **+** New App → iOS, name, language, bundle ID, SKU (any
+- [x] Apps → **+** New App → iOS, name, language, bundle ID, SKU (any
       string, e.g. `instantplaylist`).
-- [ ] Add GitHub secrets (from `~/ios-signing`):
+- [x] Add GitHub secrets (from `~/ios-signing`):
       ```sh
       base64 -w0 dist.p12 | gh secret set IOS_DIST_CERT_P12_BASE64
       gh secret set IOS_DIST_CERT_PASSWORD          # paste the .p12 password
@@ -134,30 +134,36 @@ App Store Connect (https://appstoreconnect.apple.com):
       gh secret set APPSTORE_ISSUER_ID              # paste Issuer ID
       gh secret set APPSTORE_PRIVATE_KEY < AuthKey_*.p8
       ```
-- [ ] `gh workflow run ios-release.yml`. The build then appears in
+- [x] `gh workflow run ios-release.yml`. The build then appears in
       App Store Connect → TestFlight after processing (~15–30 min).
-- [ ] Install it via TestFlight on the iPhone and smoke-test (pick the
+- [x] Install it via TestFlight on the iPhone and smoke-test (pick the
       Syncthing folder, play, tag a song, check the tag synced).
 
 Listing and submission:
-- [ ] App Privacy → *Data Not Collected*.
-- [ ] Age rating questionnaire (all "none" → 4+).
-- [ ] Pricing and availability: Free, countries.
-- [ ] EU Digital Services Act trader status (declare *not a trader* if you
+- [x] App Privacy → *Data Not Collected*.
+- [x] Age rating questionnaire (all "none" → 4+).
+- [x] Pricing and availability: Free, countries.
+- [x] EU Digital Services Act trader status (declare *not a trader* if you
       don't earn money from it; traders must publish an address and phone).
-- [ ] Version page: screenshots for the 6.9" iPhone display (1320×2868 or
-      1290×2796, at least 1), promotional text, description, keywords
-      (≤100 chars), support URL (the GitHub repo is fine), privacy policy URL,
-      category *Music*.
-- [ ] Review notes. Explain that the app plays the user's own files and how
-      to test it: "Copy a few audio files into Files → On My iPhone →
-      <app name>, then tap + Add and choose that folder." Consider linking a
-      short demo video.
-- [ ] Select the TestFlight build → *Add for Review* → submit. Review
-      usually takes 1–3 days.
+- [x] Pricing: China mainland left out (it needs a Chinese ICP filing number).
+- [x] Version page: screenshots in the *iPhone with Dynamic Island (medium
+      display)* slot, 1179×2556 (enlarged from iPhone 12 mini shots with
+      Lanczos, no AI). Promotional text, description, keywords (≤100 chars),
+      category *Music*. Support URL https://www.devank.dev/instant-playlist/,
+      privacy URL https://www.devank.dev/instant-playlist/privacy.html.
+      Don't mention Android or other apps' names anywhere in the listing.
+- [x] Content rights: does not use third-party content.
+- [x] Review notes: step-by-step test using the demo songs at
+      https://www.devank.dev/instant-playlist/demo-music.zip (12 made-up,
+      pre-tagged tones; keep that link working while the app is listed).
+- [x] Select the TestFlight build → *Add for Review* → submit. Review
+      usually takes 1–3 days. Submitted 1.0 (build 1) on 28 October 2026.
 
 ## 6. After launch
 
+- [ ] Optional: product page header / search results art (iOS 27+). Header
+      is 3840×1646, no transparency. Upload via Asset Library, no new
+      version needed.
 - [ ] Every update: bump `version:` in `pubspec.yaml`, build the `.aab`
       for Play, run `ios-release.yml` for iOS (the build number is set
       automatically there).
