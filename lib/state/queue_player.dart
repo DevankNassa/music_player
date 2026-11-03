@@ -1,139 +1,140 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
+import 'package:just_audio/just_audio.dart';
 
 import '../models/song.dart';
-import '../services/audio_player_service.dart';
 
-/// Plays through a list of songs in order, auto-advancing when one
-/// finishes. Shared across screens so playback survives switching tabs,
-/// and so Quick Tag Mode / the filter screen's "play results" both reuse
-/// the same sequencing logic instead of each rolling their own.
+/// Where the playing queue came from. Only a Mix queue follows the faders.
+enum QueueSource { library, mix }
+
+/// Plays through a list of songs in order. Shared across screens so
+/// playback survives switching tabs, and so the Library, Quick Tag Mode and
+/// the Mix tab all reuse the same sequencing.
+///
+/// The whole queue is handed to just_audio as one playlist, so the native
+/// player moves on to the next song by itself, even with the screen locked,
+/// instead of waiting for the app to react to the end of each song.
 class QueuePlayer extends ChangeNotifier {
-  final AudioPlayerService _player = AudioPlayerService();
-  List<Song> _queue = [];
-  int _index = 0;
-  Duration _position = Duration.zero;
-  Duration _duration = Duration.zero;
-  int _playToken = 0;
-  bool _resumeAfterInterruption = false;
+  final AudioPlayer _player = AudioPlayer(maxSkipsOnError: 3);
+  QueueSource? _source;
 
-  /// iOS only: AudioInterruptions in ios/Runner/AppDelegate.swift.
-  static const _interruptions = MethodChannel('insta_playlist/audio_interruptions');
+  /// Playlist edits are applied one at a time, in order.
+  Future<void> _edits = Future.value();
 
   QueuePlayer() {
-    _player.playerStateStream.listen((_) => notifyListeners());
-    _player.onComplete.listen((_) => _onSongComplete());
-    _player.positionStream.listen((p) {
-      _position = p;
-      notifyListeners();
-    });
-    _player.durationStream.listen((d) {
-      _duration = d;
-      notifyListeners();
-    });
-    if (defaultTargetPlatform == TargetPlatform.iOS) {
-      _interruptions.setMethodCallHandler(_onInterruption);
-    }
+    _player.playerStateStream.listen((_) => notifyListeners(), onError: (_) {});
+    _player.currentIndexStream.listen((_) => notifyListeners());
+    _player.sequenceStream.listen((_) => notifyListeners());
+    _player.durationStream.listen((_) => notifyListeners());
+    _player.positionStream.listen((_) => notifyListeners());
   }
 
-  /// Another app took over the audio (a call, or an app that interrupts
-  /// rather than ducking). iOS has already paused the player; mirror that,
-  /// then pick up again afterwards if we were playing and iOS says to.
-  Future<void> _onInterruption(MethodCall call) async {
-    if (call.method == 'began') {
-      _resumeAfterInterruption = isPlaying;
-      if (isPlaying) await _player.pause();
-    } else if (call.method == 'ended') {
-      final shouldResume = (call.arguments as Map?)?['shouldResume'] == true;
-      if (shouldResume && _resumeAfterInterruption) await _player.resume();
-      _resumeAfterInterruption = false;
-    }
+  List<IndexedAudioSource> get _sequence => _player.sequence;
+
+  Song? get currentSong {
+    final index = _player.currentIndex;
+    if (index == null || index >= _sequence.length) return null;
+    return _sequence[index].tag as Song?;
   }
 
-  Song? get currentSong => _queue.isEmpty ? null : _queue[_index];
-  bool get isPlaying => _player.isPlaying;
-  bool get hasNext => _queue.isNotEmpty && _index < _queue.length - 1;
-  bool get hasPrevious => _queue.isNotEmpty && _index > 0;
-  Duration get position => _position;
-  Duration get duration => _duration;
-  int get queueIndex => _index;
-  int get queueLength => _queue.length;
+  /// The songs queued, in play order.
+  List<Song> get queue => [for (final s in _sequence) s.tag as Song];
+
+  QueueSource? get source => _source;
+  bool get isPlaying => _player.playing && _player.processingState != ProcessingState.completed;
+  bool get hasNext => _player.hasNext;
+  bool get hasPrevious => _player.hasPrevious;
+  Duration get position => _player.position;
+  Duration get duration => _player.duration ?? Duration.zero;
+  int get queueIndex => _player.currentIndex ?? 0;
+  int get queueLength => _sequence.length;
 
   /// How far through the current song, 0..1 (0 until the duration is known).
   double get progress {
-    if (_duration <= Duration.zero) return 0;
-    return (_position.inMilliseconds / _duration.inMilliseconds).clamp(0.0, 1.0);
+    final d = duration;
+    if (d <= Duration.zero) return 0;
+    return (position.inMilliseconds / d.inMilliseconds).clamp(0.0, 1.0);
   }
 
   Future<void> seek(Duration position) => _player.seek(position);
 
-  Future<void> setQueue(List<Song> queue, {int startIndex = 0}) async {
+  Future<void> setQueue(
+    List<Song> queue, {
+    int startIndex = 0,
+    QueueSource source = QueueSource.library,
+  }) async {
     if (queue.isEmpty) return;
-    _queue = queue;
-    _index = startIndex.clamp(0, queue.length - 1);
-    await _playCurrent();
+    _source = source;
+    await _edit(() async {
+      await _player.setAudioSources([
+        for (final song in queue) _sourceFor(song),
+      ], initialIndex: startIndex.clamp(0, queue.length - 1));
+    });
+    _start();
   }
 
+  /// Follows the Mix tab's results while a Mix queue plays. If the playing
+  /// song is still in [matches], the queue becomes [matches] around it; if
+  /// not, it finishes and [matches] plays from the top. Either way the
+  /// playing song isn't interrupted.
+  Future<void> updateMixQueue(List<Song> matches) => _edit(() async {
+    final index = _player.currentIndex;
+    final current = currentSong;
+    if (_source != QueueSource.mix || index == null || current == null) return;
+
+    final at = matches.indexWhere((s) => s.filePath == current.filePath);
+    final before = at == -1 ? <Song>[] : matches.sublist(0, at);
+    final after = at == -1 ? matches : matches.sublist(at + 1);
+
+    final queued = [for (final s in queue) s.filePath];
+    final wanted = [...before, current, ...after].map((s) => s.filePath).toList();
+    if (listEquals(queued, wanted)) return;
+
+    // Clear everything around the playing song, then rebuild both sides.
+    if (index + 1 < _sequence.length) {
+      await _player.removeAudioSourceRange(index + 1, _sequence.length);
+    }
+    if (index > 0) await _player.removeAudioSourceRange(0, index);
+    if (before.isNotEmpty) await _player.insertAudioSources(0, before.map(_sourceFor).toList());
+    if (after.isNotEmpty) await _player.addAudioSources(after.map(_sourceFor).toList());
+  });
+
   Future<void> togglePlayPause() async {
-    final song = currentSong;
-    if (song == null) return;
-    await _player.togglePlay(song.filePath);
+    if (currentSong == null) return;
+    isPlaying ? await pause() : await play();
   }
 
   Future<void> play() async {
     if (currentSong == null || isPlaying) return;
-    await _player.resume();
+    // At the end of the queue, play the last song again from the start.
+    if (_player.processingState == ProcessingState.completed) {
+      await _player.seek(Duration.zero, index: _player.currentIndex);
+    }
+    _start();
   }
 
   Future<void> pause() => _player.pause();
 
   Future<void> next() async {
-    if (!hasNext) return;
-    _index++;
-    await _playCurrent();
+    if (hasNext) await _player.seekToNext();
   }
 
   Future<void> previous() async {
-    if (!hasPrevious) return;
-    _index--;
-    await _playCurrent();
+    if (hasPrevious) await _player.seekToPrevious();
   }
 
-  Future<void> _onSongComplete() async {
-    final token = _playToken;
-    await _player.settleAfterComplete();
-    // The user may have skipped while we waited; don't advance twice.
-    if (token != _playToken) return;
-    await next();
+  /// just_audio's play() only completes once playback stops, so it's never
+  /// awaited.
+  void _start() => unawaited(_player.play().catchError((Object _) {}));
+
+  Future<void> _edit(Future<void> Function() edit) {
+    final result = _edits.then((_) => edit());
+    _edits = result.catchError((Object _) {});
+    return result.catchError((Object _) {});
   }
 
-  Future<void> _playCurrent() async {
-    final song = currentSong;
-    if (song == null) return;
-    final token = ++_playToken;
-    _position = Duration.zero;
-    _duration = Duration.zero;
-    await _player.play(song.filePath);
-    notifyListeners();
-    if (_duration == Duration.zero) _fillDuration(token);
-  }
-
-  /// iOS only reports a duration once the file's length is known, which for
-  /// some files is after playback starts and never gets re-sent. Ask for it
-  /// directly until it shows up.
-  Future<void> _fillDuration(int token) async {
-    for (var i = 0; i < 10; i++) {
-      await Future<void>.delayed(const Duration(milliseconds: 300));
-      if (token != _playToken || _duration > Duration.zero) return;
-      final d = await _player.getDuration();
-      if (token != _playToken) return;
-      if (d != null && d > Duration.zero) {
-        _duration = d;
-        notifyListeners();
-        return;
-      }
-    }
-  }
+  static AudioSource _sourceFor(Song song) => AudioSource.file(song.filePath, tag: song);
 
   @override
   void dispose() {

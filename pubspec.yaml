@@ -38,10 +38,13 @@ dependencies:
   audiotags: ^1.4.5
   permission_handler: ^13.0.2
   path: ^1.9.1
-  audioplayers: ^6.8.1
   provider: ^6.1.5+1
   audio_service: ^0.18.19
   path_provider: ^2.1.6
+  just_audio: ^0.10.6
+  audio_session: ^0.2.4
+  just_audio_media_kit: ^2.1.0
+  media_kit_libs_linux: ^1.2.1
 
 # audiotags' published Android build.gradle pins compileSdkVersion 31, which
 # conflicts with other plugins' androidx deps requiring 33-34+. Vendored a
@@ -61,6 +64,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  just_audio_platform_interface: ^4.6.0
+  plugin_platform_interface: ^2.1.8
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

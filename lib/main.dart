@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -25,6 +27,13 @@ Future<void> main() async {
       ], await rootBundle.loadString('assets/fonts/OFL-$font.txt'));
     }
   });
+  // just_audio has no Linux/Windows player of its own; media_kit (libmpv)
+  // fills in there.
+  JustAudioMediaKit.ensureInitialized();
+  // A music app's audio session: other apps' navigation prompts and
+  // notification sounds duck it, calls pause it, and just_audio resumes or
+  // unducks once they're done.
+  await (await AudioSession.instance).configure(const AudioSessionConfiguration.music());
   final queuePlayer = QueuePlayer();
   // audio_service has no Linux/Windows implementation; there playback just
   // runs without a system media notification.

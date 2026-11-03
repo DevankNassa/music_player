@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -27,6 +28,9 @@ class _FilterSwitchesScreenState extends State<FilterSwitchesScreen> {
   final List<FilterSwitch> _switches = List.generate(_switchCount, (_) => FilterSwitch());
   bool _resultsExpanded = false;
   StreamSubscription<String>? _tagDeleted;
+
+  /// The results last handed to the player, so it only hears about changes.
+  List<String> _sentMatches = const [];
 
   @override
   void initState() {
@@ -96,6 +100,13 @@ class _FilterSwitchesScreenState extends State<FilterSwitchesScreen> {
     final libraryStore = context.watch<LibraryStore>();
     final queuePlayer = context.watch<QueuePlayer>();
     final matches = applyFilters(libraryStore.songs, _switches);
+    // A playing Mix queue follows the results: fader moves, Reset, tags
+    // edited on other tabs. The player ignores this for Library queues.
+    final paths = [for (final s in matches) s.filePath];
+    if (!listEquals(paths, _sentMatches)) {
+      _sentMatches = paths;
+      queuePlayer.updateMixQueue(matches);
+    }
     final allTags = libraryStore.allTags.toList()..sort();
     final unassigned = allTags.where((t) => !_switches.any((s) => s.tag == t)).toList();
     final slotsLeft = _switches.where((s) => s.tag == null).length;
@@ -426,7 +437,9 @@ class _ResultsCard extends StatelessWidget {
                   ),
                 ),
                 FilledButton(
-                  onPressed: matches.isEmpty ? null : () => queuePlayer.setQueue(matches),
+                  onPressed: matches.isEmpty
+                      ? null
+                      : () => queuePlayer.setQueue(matches, source: QueueSource.mix),
                   child: const Text('Play all'),
                 ),
               ],
@@ -460,7 +473,7 @@ class _ResultsCard extends StatelessWidget {
         if (isCurrent) {
           queuePlayer.togglePlayPause();
         } else {
-          queuePlayer.setQueue(matches, startIndex: index);
+          queuePlayer.setQueue(matches, startIndex: index, source: QueueSource.mix);
         }
       },
       child: Container(

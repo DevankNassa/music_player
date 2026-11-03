@@ -1,4 +1,3 @@
-import AVFoundation
 import Flutter
 import UIKit
 import UniformTypeIdentifiers
@@ -16,53 +15,6 @@ import UniformTypeIdentifiers
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "MusicFolderAccess") {
       MusicFolderAccess.register(with: registrar)
-    }
-    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "AudioInterruptions") {
-      AudioInterruptions.register(with: registrar)
-    }
-  }
-}
-
-/// Tells Dart when another app interrupts playback and when it's done.
-///
-/// Apps that only duck us (Google Maps directions, most notification
-/// sounds) are handled by iOS itself: the music keeps playing, quieter. An
-/// app that interrupts instead pauses the player outright, and audioplayers
-/// never resumes it, so Dart resumes it when iOS says it should.
-final class AudioInterruptions: NSObject, FlutterPlugin {
-  private let channel: FlutterMethodChannel
-
-  init(channel: FlutterMethodChannel) {
-    self.channel = channel
-    super.init()
-    NotificationCenter.default.addObserver(
-      self, selector: #selector(onInterruption(_:)),
-      name: AVAudioSession.interruptionNotification, object: nil)
-  }
-
-  static func register(with registrar: FlutterPluginRegistrar) {
-    let channel = FlutterMethodChannel(
-      name: "insta_playlist/audio_interruptions", binaryMessenger: registrar.messenger())
-    registrar.publish(AudioInterruptions(channel: channel))
-  }
-
-  @objc private func onInterruption(_ notification: Notification) {
-    guard let info = notification.userInfo,
-          let rawType = info[AVAudioSessionInterruptionTypeKey] as? UInt,
-          let type = AVAudioSession.InterruptionType(rawValue: rawType)
-    else { return }
-    switch type {
-    case .began:
-      DispatchQueue.main.async { self.channel.invokeMethod("began", arguments: nil) }
-    case .ended:
-      let rawOptions = info[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
-      let shouldResume = AVAudioSession.InterruptionOptions(rawValue: rawOptions).contains(.shouldResume)
-      if shouldResume { try? AVAudioSession.sharedInstance().setActive(true) }
-      DispatchQueue.main.async {
-        self.channel.invokeMethod("ended", arguments: ["shouldResume": shouldResume])
-      }
-    @unknown default:
-      break
     }
   }
 }
