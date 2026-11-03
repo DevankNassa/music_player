@@ -18,7 +18,8 @@ builds fall back to the debug signing key.
 
 ## Status
 
-Early planning. Spec sheet in progress.
+Early planning. Spec sheet in progress. Future ideas are in
+[ROADMAP.md](ROADMAP.md).
 
 ## Run app
 flutter run -d linux
