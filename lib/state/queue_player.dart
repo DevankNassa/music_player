@@ -13,10 +13,11 @@ class QueuePlayer extends ChangeNotifier {
   int _index = 0;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
+  int _playToken = 0;
 
   QueuePlayer() {
     _player.playerStateStream.listen((_) => notifyListeners());
-    _player.onComplete.listen((_) => next());
+    _player.onComplete.listen((_) => _onSongComplete());
     _player.positionStream.listen((p) {
       _position = p;
       notifyListeners();
@@ -76,13 +77,40 @@ class QueuePlayer extends ChangeNotifier {
     await _playCurrent();
   }
 
+  Future<void> _onSongComplete() async {
+    final token = _playToken;
+    await _player.settleAfterComplete();
+    // The user may have skipped while we waited; don't advance twice.
+    if (token != _playToken) return;
+    await next();
+  }
+
   Future<void> _playCurrent() async {
     final song = currentSong;
     if (song == null) return;
+    final token = ++_playToken;
     _position = Duration.zero;
     _duration = Duration.zero;
     await _player.play(song.filePath);
     notifyListeners();
+    if (_duration == Duration.zero) _fillDuration(token);
+  }
+
+  /// iOS only reports a duration once the file's length is known, which for
+  /// some files is after playback starts and never gets re-sent. Ask for it
+  /// directly until it shows up.
+  Future<void> _fillDuration(int token) async {
+    for (var i = 0; i < 10; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      if (token != _playToken || _duration > Duration.zero) return;
+      final d = await _player.getDuration();
+      if (token != _playToken) return;
+      if (d != null && d > Duration.zero) {
+        _duration = d;
+        notifyListeners();
+        return;
+      }
+    }
   }
 
   @override
