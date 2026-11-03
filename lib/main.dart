@@ -13,6 +13,7 @@ import 'services/library_service.dart';
 import 'services/media_notification_handler.dart';
 import 'state/library_store.dart';
 import 'state/queue_player.dart';
+import 'state/tag_pad_settings.dart';
 import 'theme/organic.dart';
 
 Future<void> main() async {
@@ -42,21 +43,30 @@ Future<void> main() async {
   // (visible in the Files app).
   if (Platform.isIOS) {
     final documents = await getApplicationDocumentsDirectory();
-    unawaited(libraryStore.addFolder(documents.path));
+    unawaited(libraryStore.addFolder(documents.path, builtIn: true));
   }
   // Folders picked in earlier sessions, e.g. a Syncthing folder.
   for (final folder in await LibraryService.restoreFolders()) {
     unawaited(libraryStore.addFolder(folder));
   }
   AppLifecycleListener(onResume: libraryStore.rescanFolders);
-  runApp(InstantPlaylistApp(queuePlayer: queuePlayer, libraryStore: libraryStore));
+  final tagPadSettings = TagPadSettings();
+  await tagPadSettings.load();
+  runApp(
+    InstantPlaylistApp(
+      queuePlayer: queuePlayer,
+      libraryStore: libraryStore,
+      tagPadSettings: tagPadSettings,
+    ),
+  );
 }
 
 class InstantPlaylistApp extends StatelessWidget {
   final QueuePlayer? queuePlayer;
   final LibraryStore? libraryStore;
+  final TagPadSettings? tagPadSettings;
 
-  const InstantPlaylistApp({super.key, this.queuePlayer, this.libraryStore});
+  const InstantPlaylistApp({super.key, this.queuePlayer, this.libraryStore, this.tagPadSettings});
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +80,10 @@ class InstantPlaylistApp extends StatelessWidget {
           ChangeNotifierProvider.value(value: queuePlayer!)
         else
           ChangeNotifierProvider(create: (_) => QueuePlayer()),
+        if (tagPadSettings != null)
+          ChangeNotifierProvider.value(value: tagPadSettings!)
+        else
+          ChangeNotifierProvider(create: (_) => TagPadSettings()),
       ],
       child: MaterialApp(
         title: 'Instant Playlist',

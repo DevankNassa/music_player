@@ -71,6 +71,16 @@ class LibraryService {
     return (await _readDesktopFolders()).where((f) => Directory(f).existsSync()).toList();
   }
 
+  /// Stops remembering a folder picked with [pickFolder], so it's no longer
+  /// restored on launch (and on mobile, gives up the access grant).
+  static Future<void> forgetFolder(String folder) async {
+    if (_isMobile) return _folders.invokeMethod('forgetFolder', {'path': folder});
+    if (!_isDesktop) return;
+    final folders = await _readDesktopFolders();
+    if (!folders.remove(folder)) return;
+    await (await _desktopFoldersFile()).writeAsString(jsonEncode(folders));
+  }
+
   /// Android only: replaces the song file at [path] with the contents of
   /// [source]. Paths can't write to files another app (e.g. Syncthing)
   /// created, but the picked folder's grant can.

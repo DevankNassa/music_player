@@ -1,15 +1,17 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../models/song.dart';
 import '../services/library_service.dart';
 import '../state/library_store.dart';
 import '../state/queue_player.dart';
 import '../theme/organic.dart';
+import '../widgets/folder_actions.dart';
 import '../widgets/now_playing_bar.dart';
 import '../widgets/organic.dart';
+import 'settings_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -20,6 +22,30 @@ class LibraryScreen extends StatefulWidget {
 
 class _LibraryScreenState extends State<LibraryScreen> {
   bool _loading = false;
+  bool _searching = false;
+  final _query = TextEditingController();
+
+  @override
+  void dispose() {
+    _query.dispose();
+    super.dispose();
+  }
+
+  void _closeSearch() {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _searching = false;
+      _query.clear();
+    });
+  }
+
+  /// Songs whose title, artist or any tag contains the query.
+  static List<Song> _matching(List<Song> songs, String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return songs;
+    bool has(String? text) => text != null && text.toLowerCase().contains(q);
+    return songs.where((s) => has(s.title) || has(s.artist) || s.tags.any(has)).toList();
+  }
 
   Future<void> _addSongs() async {
     setState(() => _loading = true);
@@ -36,26 +62,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Future<void> _addFolder() async {
-    if (!await LibraryService.ensureAudioPermission()) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Audio permission is needed to scan a folder. Enable it in system settings.',
-          ),
-        ),
-      );
-      return;
-    }
-    final String? folder;
-    try {
-      folder = await LibraryService.pickFolder();
-    } on PlatformException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Couldn't open that folder: ${e.message}")));
-      return;
-    }
+    final folder = await pickFolderWithFeedback(context);
     if (folder == null || !mounted) return;
     setState(() => _loading = true);
     await context.read<LibraryStore>().addFolder(folder);
@@ -109,25 +116,70 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final songs = context.watch<LibraryStore>().songs;
+    final library = context.watch<LibraryStore>().songs;
     final queuePlayer = context.watch<QueuePlayer>();
+    final songs = _searching ? _matching(library, _query.text) : library;
 
     return SafeArea(
       bottom: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(22, 12, 22, 10),
-            child: Row(
-              children: [
-                Expanded(child: Text('Library', style: Organic.headingStyle(30))),
-                FilledButton(onPressed: _showAddSheet, child: const Text('+ Add')),
-              ],
+          if (_searching)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _query,
+                      autofocus: true,
+                      textInputAction: TextInputAction.search,
+                      onChanged: (_) => setState(() {}),
+                      style: const TextStyle(fontSize: 15),
+                      decoration: InputDecoration(
+                        hintText: 'Songs, artists or tags',
+                        prefixIcon: const Icon(Icons.search_rounded, color: Organic.neutral700),
+                        filled: true,
+                        fillColor: Organic.surface,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(999),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  TextButton(onPressed: _closeSearch, child: const Text('Cancel')),
+                ],
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 12, 14, 10),
+              child: Row(
+                children: [
+                  Expanded(child: Text('Library', style: Organic.headingStyle(30))),
+                  IconButton(
+                    tooltip: 'Search',
+                    icon: const Icon(Icons.search_rounded),
+                    onPressed: () => setState(() => _searching = true),
+                  ),
+                  IconButton(
+                    tooltip: 'Settings',
+                    icon: const Icon(Icons.settings_outlined),
+                    onPressed: () =>
+                        Navigator.of(context)
+                            .push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen())),
+                  ),
+                  const SizedBox(width: 4),
+                  FilledButton(onPressed: _showAddSheet, child: const Text('+ Add')),
+                ],
+              ),
             ),
-          ),
           Expanded(
-            child: songs.isEmpty
+            child: library.isEmpty
                 ? Center(
                     child: _loading
                         ? const CircularProgressIndicator()
@@ -143,7 +195,16 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             ),
                           ),
                   )
+                : songs.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.fromLTRB(26, 28, 26, 0),
+                    child: Text(
+                      'No songs, artists or tags match "${_query.text.trim()}".',
+                      style: const TextStyle(fontSize: 14, color: Organic.neutral700),
+                    ),
+                  )
                 : ListView.builder(
+                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: EdgeInsets.fromLTRB(
                       14,
                       0,
@@ -155,13 +216,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       final song = songs[index];
                       final isCurrent = queuePlayer.currentSong?.filePath == song.filePath;
                       return _SongRow(
-                        number: index + 1,
-                        song: song.title,
-                        subtitle: [
-                          if (song.artist != null) song.artist!,
-                          if (song.tags.isNotEmpty) song.tags.join(', '),
-                        ].join(' · '),
+                        song: song,
                         isCurrent: isCurrent,
+                        playing: isCurrent && queuePlayer.isPlaying,
                         onTap: () {
                           if (isCurrent) {
                             queuePlayer.togglePlayPause();
@@ -179,28 +236,28 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 }
 
-/// Numbered song row; the playing song gets a warm highlight and an accent
-/// number.
+/// Song row: a round play/pause button, the title, then the artist and the
+/// song's tags as sage chips. The current song gets a warm highlight and an
+/// accent button.
 class _SongRow extends StatelessWidget {
-  final int number;
-  final String song;
-  final String subtitle;
+  final Song song;
   final bool isCurrent;
+  final bool playing;
   final VoidCallback onTap;
 
   const _SongRow({
-    required this.number,
     required this.song,
-    required this.subtitle,
     required this.isCurrent,
+    required this.playing,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final tags = song.tags.toList()..sort();
     return Material(
       color: isCurrent ? Organic.accent100 : Colors.transparent,
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(20),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -208,44 +265,84 @@ class _SongRow extends StatelessWidget {
         highlightColor: Organic.neutral200,
         splashColor: Colors.transparent,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
           child: Row(
             children: [
-              SizedBox(
-                width: 26,
-                child: Text(
-                  '$number',
-                  textAlign: TextAlign.right,
-                  style: Organic.headingStyle(
-                    20,
-                    color: isCurrent ? Organic.accent : Organic.neutral500,
-                  ),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: isCurrent ? Organic.accent : Organic.neutral200,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                  size: 22,
+                  color: isCurrent ? Organic.bg : Organic.text,
+                  semanticLabel: playing ? 'Pause' : 'Play',
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      song,
+                      song.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                    ),
-                    if (subtitle.isNotEmpty)
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12, color: Organic.neutral700),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        height: 1.2,
                       ),
+                    ),
+                    if (song.artist != null || tags.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          if (song.artist != null)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 2),
+                              child: Text(
+                                song.artist!,
+                                style: const TextStyle(fontSize: 12, color: Organic.neutral700),
+                              ),
+                            ),
+                          for (final tag in tags) _TagChip(tag),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _TagChip extends StatelessWidget {
+  final String tag;
+
+  const _TagChip(this.tag);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+      decoration: BoxDecoration(
+        color: Organic.accent2_100,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        tag,
+        style: const TextStyle(fontSize: 11, letterSpacing: 0.2, color: Organic.accent2_800),
       ),
     );
   }

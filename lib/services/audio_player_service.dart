@@ -32,8 +32,7 @@ class AudioPlayerService {
         defaultTargetPlatform != TargetPlatform.macOS) {
       return;
     }
-    await _player.onSeekComplete.first
-        .timeout(const Duration(seconds: 1), onTimeout: () {});
+    await _player.onSeekComplete.first.timeout(const Duration(seconds: 1), onTimeout: () {});
   }
 
   Future<void> play(String filePath) async {

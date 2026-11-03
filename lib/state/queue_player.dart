@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 import '../models/song.dart';
 import '../services/audio_player_service.dart';
@@ -14,6 +15,10 @@ class QueuePlayer extends ChangeNotifier {
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
   int _playToken = 0;
+  bool _resumeAfterInterruption = false;
+
+  /// iOS only: AudioInterruptions in ios/Runner/AppDelegate.swift.
+  static const _interruptions = MethodChannel('insta_playlist/audio_interruptions');
 
   QueuePlayer() {
     _player.playerStateStream.listen((_) => notifyListeners());
@@ -26,6 +31,23 @@ class QueuePlayer extends ChangeNotifier {
       _duration = d;
       notifyListeners();
     });
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      _interruptions.setMethodCallHandler(_onInterruption);
+    }
+  }
+
+  /// Another app took over the audio (a call, or an app that interrupts
+  /// rather than ducking). iOS has already paused the player; mirror that,
+  /// then pick up again afterwards if we were playing and iOS says to.
+  Future<void> _onInterruption(MethodCall call) async {
+    if (call.method == 'began') {
+      _resumeAfterInterruption = isPlaying;
+      if (isPlaying) await _player.pause();
+    } else if (call.method == 'ended') {
+      final shouldResume = (call.arguments as Map?)?['shouldResume'] == true;
+      if (shouldResume && _resumeAfterInterruption) await _player.resume();
+      _resumeAfterInterruption = false;
+    }
   }
 
   Song? get currentSong => _queue.isEmpty ? null : _queue[_index];

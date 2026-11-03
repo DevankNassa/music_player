@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -24,6 +26,29 @@ class FilterSwitchesScreen extends StatefulWidget {
 class _FilterSwitchesScreenState extends State<FilterSwitchesScreen> {
   final List<FilterSwitch> _switches = List.generate(_switchCount, (_) => FilterSwitch());
   bool _resultsExpanded = false;
+  StreamSubscription<String>? _tagDeleted;
+
+  @override
+  void initState() {
+    super.initState();
+    // A tag deleted in Settings → Pinned tags frees its fader.
+    _tagDeleted = context.read<LibraryStore>().tagDeleted.listen((tag) {
+      final sw = _switches.where((s) => s.tag == tag).toList();
+      if (sw.isEmpty || !mounted) return;
+      setState(() {
+        for (final s in sw) {
+          s.tag = null;
+          s.position = SwitchPosition.neutral;
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _tagDeleted?.cancel();
+    super.dispose();
+  }
 
   /// Patches [tag] into the first free fader, or frees its fader if it's
   /// already patched.

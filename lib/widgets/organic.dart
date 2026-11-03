@@ -328,3 +328,78 @@ class EmptyState extends StatelessWidget {
     );
   }
 }
+
+/// Cream confirmation dialog from the mocks: heading, muted body, Cancel
+/// and an accent action. Resolves to true only if the action was tapped.
+Future<bool> showOrganicConfirm({
+  required BuildContext context,
+  required String title,
+  required String body,
+  required String action,
+}) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    barrierColor: const Color(0x73201E1D),
+    builder: (context) => Dialog(
+      backgroundColor: Organic.bg,
+      insetPadding: const EdgeInsets.all(24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(title, style: Organic.headingStyle(22)),
+            const SizedBox(height: 10),
+            Text(body, style: const TextStyle(fontSize: 14, color: Organic.neutral700)),
+            const SizedBox(height: 18),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(onPressed: () => Navigator.of(context).pop(true), child: Text(action)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+  return confirmed ?? false;
+}
+
+/// Heading-font section title with an optional muted note on the right,
+/// as on the Settings screens.
+class SectionHeader extends StatelessWidget {
+  final String title;
+  final String? note;
+  final EdgeInsets padding;
+
+  const SectionHeader(
+    this.title, {
+    super.key,
+    this.note,
+    this.padding = const EdgeInsets.symmetric(horizontal: 8),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: padding,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Expanded(child: Text(title, style: Organic.headingStyle(20))),
+          if (note != null)
+            Text(note!, style: const TextStyle(fontSize: 12, color: Organic.neutral700)),
+        ],
+      ),
+    );
+  }
+}

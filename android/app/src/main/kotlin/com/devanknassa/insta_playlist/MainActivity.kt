@@ -45,6 +45,16 @@ private class MusicFolderAccess(private val activity: Activity) {
             "pickFolder" -> pickFolder(result)
             "restoreFolders" -> result.success(grantedFolders().map { it.second })
             "writeBack" -> writeBack(call.argument("path")!!, call.argument("source")!!, result)
+            "forgetFolder" -> {
+                val path = call.argument<String>("path")
+                grantedFolders().filter { it.second == path }.forEach { (tree, _) ->
+                    activity.contentResolver.releasePersistableUriPermission(
+                        tree,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                    )
+                }
+                result.success(null)
+            }
             else -> result.notImplemented()
         }
     }

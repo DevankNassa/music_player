@@ -31,6 +31,7 @@ abstract final class Organic {
   static const accent700 = Color(0xFF8C491A);
   static const accent800 = Color(0xFF643312);
 
+  static const accent2_100 = Color(0xFFF0FAE1);
   static const accent2_200 = Color(0xFFE1EECC);
   static const accent2_300 = Color(0xFFCCDBB2);
   static const accent2_400 = Color(0xFFAEBF92);

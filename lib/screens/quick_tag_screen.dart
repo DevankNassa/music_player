@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/song.dart';
 import '../state/library_store.dart';
 import '../state/queue_player.dart';
+import '../state/tag_pad_settings.dart';
 import '../theme/organic.dart';
 import '../widgets/disc.dart';
 import '../widgets/organic.dart';
@@ -11,7 +12,8 @@ import '../widgets/seek_bar.dart';
 import '../widgets/tag_actions.dart';
 
 /// Quick Tag mode: a compact now-playing card over a big two-column pad of
-/// every tag in the library. Tapping a tile toggles it on the playing song.
+/// every tag in the library: pinned tags first (Settings → Pinned tags), then
+/// the rest. Tapping a tile toggles it on the playing song.
 class QuickTagScreen extends StatefulWidget {
   const QuickTagScreen({super.key});
 
@@ -44,8 +46,19 @@ class _QuickTagScreenState extends State<QuickTagScreen> {
     }
 
     final current = currentLibraryCopy(libraryStore, playing);
-    final allTags = libraryStore.allTags.toList()..sort();
-    int songCount(String tag) => library.where((s) => s.tags.contains(tag)).length;
+    final tagPad = context.watch<TagPadSettings>();
+    final arranged = tagPad.arrange(libraryStore.allTags, libraryStore.songCountWithTag);
+
+    Widget tile(String tag) => _TagTile(
+      tag: tag,
+      songCount: libraryStore.songCountWithTag(tag),
+      applied: current.tags.contains(tag),
+      onTap: () {
+        final updated = {...current.tags};
+        updated.contains(tag) ? updated.remove(tag) : updated.add(tag);
+        saveTags(context, current, updated);
+      },
+    );
 
     return SafeArea(
       bottom: false,
@@ -73,65 +86,71 @@ class _QuickTagScreenState extends State<QuickTagScreen> {
           Expanded(
             // Tags are unlimited, so the pad scrolls rather than pushing the
             // now-playing card off screen.
-            child: GridView(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisExtent: 72,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-              ),
-              children: [
-                for (final tag in allTags)
-                  _TagTile(
-                    tag: tag,
-                    songCount: songCount(tag),
-                    applied: current.tags.contains(tag),
-                    onTap: () {
-                      final updated = {...current.tags};
-                      updated.contains(tag) ? updated.remove(tag) : updated.add(tag);
-                      saveTags(context, current, updated);
-                    },
-                  ),
-                if (_typing)
-                  TextField(
-                    autofocus: true,
-                    textInputAction: TextInputAction.done,
-                    style: const TextStyle(fontSize: 16),
-                    expands: true,
-                    maxLines: null,
-                    textAlignVertical: TextAlignVertical.center,
-                    decoration: InputDecoration(
-                      hintText: 'New tag…',
-                      border: _tileBorder(Organic.divider),
-                      enabledBorder: _tileBorder(Organic.divider),
-                      focusedBorder: _tileBorder(Organic.accent),
+            child: CustomScrollView(
+              slivers: [
+                if (arranged.pinned.isNotEmpty) ...[
+                  _padGrid([for (final tag in arranged.pinned) tile(tag)]),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+                      child: Row(
+                        children: [
+                          Text(
+                            tagPad.sort == TagSort.mostUsed
+                                ? 'All other tags · most used'
+                                : 'All other tags · A–Z',
+                            style: const TextStyle(fontSize: 12, color: Organic.neutral700),
+                          ),
+                          const SizedBox(width: 10),
+                          const Expanded(child: Divider(height: 1, color: Organic.divider)),
+                        ],
+                      ),
                     ),
-                    onTapOutside: (_) => setState(() => _typing = false),
-                    onSubmitted: (value) {
-                      setState(() => _typing = false);
-                      addNewTag(context, current, value);
-                    },
-                  )
-                else
-                  DashedOutline(
-                    radius: 26,
-                    child: Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(26),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        onTap: () => setState(() => _typing = true),
-                        hoverColor: Organic.accent100,
-                        child: Center(
-                          child: Text(
-                            '+ New tag',
-                            style: Organic.headingStyle(17, color: Organic.neutral700),
+                  ),
+                ],
+                _padGrid([
+                  for (final tag in arranged.rest) tile(tag),
+                  if (_typing)
+                    TextField(
+                      autofocus: true,
+                      textInputAction: TextInputAction.done,
+                      style: const TextStyle(fontSize: 16),
+                      expands: true,
+                      maxLines: null,
+                      textAlignVertical: TextAlignVertical.center,
+                      decoration: InputDecoration(
+                        hintText: 'New tag…',
+                        border: _tileBorder(Organic.divider),
+                        enabledBorder: _tileBorder(Organic.divider),
+                        focusedBorder: _tileBorder(Organic.accent),
+                      ),
+                      onTapOutside: (_) => setState(() => _typing = false),
+                      onSubmitted: (value) {
+                        setState(() => _typing = false);
+                        addNewTag(context, current, value);
+                      },
+                    )
+                  else
+                    DashedOutline(
+                      radius: 26,
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(26),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: () => setState(() => _typing = true),
+                          hoverColor: Organic.accent100,
+                          child: Center(
+                            child: Text(
+                              '+ New tag',
+                              style: Organic.headingStyle(17, color: Organic.neutral700),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
+                ]),
+                const SliverPadding(padding: EdgeInsets.only(bottom: 14)),
               ],
             ),
           ),
@@ -139,6 +158,19 @@ class _QuickTagScreenState extends State<QuickTagScreen> {
       ),
     );
   }
+
+  static Widget _padGrid(List<Widget> tiles) => SliverPadding(
+    padding: const EdgeInsets.symmetric(horizontal: 14),
+    sliver: SliverGrid(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisExtent: 72,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+      ),
+      delegate: SliverChildListDelegate(tiles),
+    ),
+  );
 
   static OutlineInputBorder _tileBorder(Color color) => OutlineInputBorder(
     borderRadius: BorderRadius.circular(26),

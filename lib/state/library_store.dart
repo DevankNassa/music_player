@@ -21,12 +21,26 @@ class LibraryStore extends ChangeNotifier {
   final List<Song> _songs = [];
   final Set<String> _knownPaths = {};
   final List<String> _watchedFolders = [];
-  final List<StreamSubscription<FileSystemEvent>> _watchSubscriptions = [];
+  final Map<String, StreamSubscription<FileSystemEvent>> _watchSubscriptions = {};
+  final _tagDeleted = StreamController<String>.broadcast();
+  String? _builtInFolder;
 
   List<Song> get songs => List.unmodifiable(_songs);
   List<String> get watchedFolders => List.unmodifiable(_watchedFolders);
 
+  /// The iOS app's own Documents folder, which is always in the library and
+  /// can't be removed.
+  String? get builtInFolder => _builtInFolder;
+
+  /// Fires with a tag's name after [deleteTag] removes it from every song,
+  /// so screens holding on to it (the Mix faders) can let go.
+  Stream<String> get tagDeleted => _tagDeleted.stream;
+
   Set<String> get allTags => _songs.expand((s) => s.tags).toSet();
+
+  int songCountWithTag(String tag) => _songs.where((s) => s.tags.contains(tag)).length;
+
+  int songCountIn(String folder) => _songs.where((s) => p.isWithin(folder, s.filePath)).length;
 
   void addSongs(List<Song> newSongs) {
     final toAdd = newSongs.where((s) => _knownPaths.add(s.filePath)).toList();
@@ -35,13 +49,46 @@ class LibraryStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addFolder(String folderPath) async {
+  Future<void> addFolder(String folderPath, {bool builtIn = false}) async {
+    if (builtIn) _builtInFolder = folderPath;
     final songs = await LibraryService.scanFolder(folderPath);
     addSongs(songs);
     if (!_watchedFolders.contains(folderPath)) {
       _watchedFolders.add(folderPath);
       _watchFolder(folderPath);
     }
+  }
+
+  /// Drops [folderPath]'s songs from the library, stops watching it and
+  /// forgets the folder so it isn't restored on the next launch. Tags live
+  /// in the files, so they come back if the folder is added again.
+  Future<void> removeFolder(String folderPath) async {
+    if (folderPath == _builtInFolder || !_watchedFolders.remove(folderPath)) return;
+    await _watchSubscriptions.remove(folderPath)?.cancel();
+    _songs.removeWhere((s) {
+      final orphaned =
+          p.isWithin(folderPath, s.filePath) &&
+          !_watchedFolders.any((f) => p.isWithin(f, s.filePath));
+      if (orphaned) _knownPaths.remove(s.filePath);
+      return orphaned;
+    });
+    notifyListeners();
+    await LibraryService.forgetFolder(folderPath);
+  }
+
+  /// Removes [tag] from every song that has it. Songs whose files couldn't
+  /// be written keep the tag; their count is returned.
+  Future<int> deleteTag(String tag) async {
+    var failed = 0;
+    for (final song in _songs.where((s) => s.tags.contains(tag)).toList()) {
+      try {
+        await setTags(song, {...song.tags}..remove(tag));
+      } on TagWriteException {
+        failed++;
+      }
+    }
+    _tagDeleted.add(tag);
+    return failed;
   }
 
   /// Picks up songs added to or deleted from the folders while the app
@@ -82,7 +129,7 @@ class LibraryStore extends ChangeNotifier {
       _songs.add(song);
       notifyListeners();
     }, onError: (_) {});
-    _watchSubscriptions.add(sub);
+    _watchSubscriptions[folderPath] = sub;
   }
 
   /// Throws [TagWriteException] if the file couldn't be written, so the UI
@@ -120,9 +167,10 @@ class LibraryStore extends ChangeNotifier {
 
   @override
   void dispose() {
-    for (final sub in _watchSubscriptions) {
+    for (final sub in _watchSubscriptions.values) {
       sub.cancel();
     }
+    _tagDeleted.close();
     super.dispose();
   }
 }
