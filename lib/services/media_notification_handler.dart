@@ -78,7 +78,17 @@ class MediaNotificationHandler extends BaseAudioHandler with SeekHandler {
     ];
     playbackState.add(PlaybackState(
       controls: controls,
-      systemActions: const {MediaAction.seek},
+      // On iOS only the actions listed here get a remote-command handler,
+      // and `controls` holds play *or* pause, never both. Bluetooth
+      // headsets and car kits often send an explicit play or pause (based
+      // on what they think the state is) rather than a toggle, so the one
+      // that's missing would be silently dropped. Keep all of them enabled.
+      systemActions: const {
+        MediaAction.seek,
+        MediaAction.play,
+        MediaAction.pause,
+        MediaAction.playPause,
+      },
       androidCompactActionIndices: List.generate(controls.length, (i) => i),
       processingState: hasSong ? AudioProcessingState.ready : AudioProcessingState.idle,
       playing: playing,
@@ -88,6 +98,21 @@ class MediaNotificationHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> play() => _queuePlayer.play();
+
+  /// Headset play/pause button (iOS togglePlayPause, Android media button).
+  /// The default decides from [playbackState], which lags the player by a
+  /// frame; ask the player itself instead.
+  @override
+  Future<void> click([MediaButton button = MediaButton.media]) async {
+    switch (button) {
+      case MediaButton.media:
+        await _queuePlayer.togglePlayPause();
+      case MediaButton.next:
+        await skipToNext();
+      case MediaButton.previous:
+        await skipToPrevious();
+    }
+  }
 
   @override
   Future<void> pause() => _queuePlayer.pause();
