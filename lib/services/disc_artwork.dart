@@ -29,19 +29,22 @@ Future<Uri?> discArtworkUri() async {
 }
 
 Future<List<int>> _renderPng(int size) async {
+  // The system draws this card itself, so it keeps the light palette's
+  // colours whatever theme the app is in.
+  const c = OrganicColors.light;
   final recorder = ui.PictureRecorder();
   final canvas = ui.Canvas(recorder);
   final full = ui.Size.square(size.toDouble());
   // Opaque brown ground (the card colour in mock 4b) so the system's colour
   // extraction lands on it rather than on a transparent edge.
-  canvas.drawRect(ui.Offset.zero & full, ui.Paint()..color = Organic.accent800);
+  canvas.drawRect(ui.Offset.zero & full, ui.Paint()..color = c.accent800);
   // Disc at ~70% with one groove band and a brown hole, as in the mock.
   final inset = size * 0.15;
   canvas.translate(inset, inset);
-  const DiscPainter(
-    bands: [(1, Organic.accent2_400), (20 / 32, Organic.accent2_300)],
+  DiscPainter(
+    bands: [(1, c.accent2_400), (20 / 32, c.accent2_300)],
     holeFraction: 8 / 32,
-    holeColor: Organic.accent800,
+    holeColor: c.accent800,
   ).paint(canvas, ui.Size.square(size - 2 * inset));
   final image = await recorder.endRecording().toImage(size, size);
   final bytes = await image.toByteData(format: ui.ImageByteFormat.png);

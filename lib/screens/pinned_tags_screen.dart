@@ -36,6 +36,7 @@ class PinnedTagsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Organic.of(context);
     final libraryStore = context.watch<LibraryStore>();
     final tagPad = context.watch<TagPadSettings>();
     final arranged = tagPad.arrange(libraryStore.allTags, libraryStore.songCountWithTag);
@@ -44,22 +45,22 @@ class PinnedTagsScreen extends StatelessWidget {
     return SettingsPage(
       title: 'Pinned tags',
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Text(
             'These appear first on the Tag pad, in this order.',
-            style: TextStyle(fontSize: 13, color: Organic.neutral700),
+            style: TextStyle(fontSize: 13, color: c.neutral700),
           ),
         ),
         SectionHeader('Pinned', note: '${pinned.length} of ${TagPadSettings.maxPinned}'),
         SettingsCard(
           children: [
             if (pinned.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(14),
+              Padding(
+                padding: const EdgeInsets.all(14),
                 child: Text(
                   'No pinned tags. The Tag pad shows all tags in the order below.',
-                  style: TextStyle(fontSize: 14, color: Organic.neutral700),
+                  style: TextStyle(fontSize: 14, color: c.neutral700),
                 ),
               ),
             for (final (i, tag) in pinned.indexed)
@@ -139,6 +140,7 @@ class _TagRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Organic.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 4, 4, 4),
       child: Row(
@@ -146,7 +148,7 @@ class _TagRow extends StatelessWidget {
           if (number != null)
             SizedBox(
               width: 26,
-              child: Text('$number', style: Organic.headingStyle(18, color: Organic.accent700)),
+              child: Text('$number', style: Organic.headingStyle(18, color: c.accent700)),
             ),
           Expanded(
             child: Column(
@@ -161,10 +163,7 @@ class _TagRow extends StatelessWidget {
                     fontWeight: number != null ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
-                Text(
-                  songsText(count),
-                  style: const TextStyle(fontSize: 12, color: Organic.neutral700),
-                ),
+                Text(songsText(count), style: TextStyle(fontSize: 12, color: c.neutral700)),
               ],
             ),
           ),
@@ -182,9 +181,10 @@ class _DeleteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Organic.of(context);
     return IconButton(
       tooltip: 'Delete tag from all songs',
-      color: Organic.accent700,
+      color: c.accent700,
       icon: const Icon(Icons.delete_outline_rounded),
       onPressed: onPressed,
     );
@@ -200,13 +200,14 @@ class _SortToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Organic.of(context);
     Widget option(TagSort value, String label) {
       final selected = sort == value;
       return Semantics(
         selected: selected,
         button: true,
         child: Material(
-          color: selected ? Organic.neutral900 : Colors.transparent,
+          color: selected ? c.neutral900 : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -220,7 +221,7 @@ class _SortToggle extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: selected ? Organic.neutral100 : Organic.text,
+                  color: selected ? c.neutral100 : c.text,
                 ),
               ),
             ),
@@ -231,7 +232,7 @@ class _SortToggle extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(color: Organic.surface, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(999)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

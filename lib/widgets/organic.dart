@@ -3,6 +3,7 @@ import 'dart:ui' show PathMetric;
 import 'package:flutter/material.dart';
 
 import '../theme/organic.dart';
+import 'disc.dart';
 
 /// Small building blocks shared by the screens, following the Organic
 /// mocks: bottom sheets, sheet rows, tag pills, round buttons.
@@ -10,11 +11,12 @@ import '../theme/organic.dart';
 /// Bottom sheet with the mocks' cream background, 32px top corners and
 /// grab handle.
 Future<T?> showOrganicSheet<T>({required BuildContext context, required WidgetBuilder builder}) {
+  final c = Organic.of(context);
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Organic.bg,
-    barrierColor: const Color(0x66201E1D),
+    backgroundColor: c.isDark ? c.surface : c.bg,
+    barrierColor: Colors.black.withValues(alpha: c.isDark ? 0.6 : 0.4),
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
     ),
@@ -36,7 +38,7 @@ Future<T?> showOrganicSheet<T>({required BuildContext context, required WidgetBu
                     height: 5,
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
-                      color: Organic.neutral400,
+                      color: c.neutral400,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -49,6 +51,42 @@ Future<T?> showOrganicSheet<T>({required BuildContext context, required WidgetBu
       ),
     ),
   );
+}
+
+/// Shrinks its child a touch while a finger is down on it, so buttons and
+/// tiles feel pressed rather than just tinted.
+class PressScale extends StatefulWidget {
+  final Widget child;
+  final double scale;
+  final bool enabled;
+
+  const PressScale({super.key, required this.child, this.scale = 0.94, this.enabled = true});
+
+  @override
+  State<PressScale> createState() => _PressScaleState();
+}
+
+class _PressScaleState extends State<PressScale> {
+  bool _down = false;
+
+  void _set(bool down) {
+    if (_down != down && mounted) setState(() => _down = down);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: (_) => _set(true),
+      onPointerUp: (_) => _set(false),
+      onPointerCancel: (_) => _set(false),
+      child: AnimatedScale(
+        scale: _down && widget.enabled ? widget.scale : 1,
+        duration: Duration(milliseconds: _down ? 70 : 180),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
 }
 
 /// A tappable row in an Organic sheet; highlights accent-100 on hover/press.
@@ -68,15 +106,16 @@ class SheetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Organic.of(context);
     return Material(
-      color: filled ? Organic.surface : Colors.transparent,
+      // Sheets sit on `surface` in dark, so a filled row steps up from it.
+      color: filled ? (c.isDark ? c.neutral200 : c.surface) : Colors.transparent,
       borderRadius: BorderRadius.circular(22),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        hoverColor: Organic.accent100,
-        highlightColor: Organic.accent100,
-        splashColor: Colors.transparent,
+        hoverColor: c.accent100,
+        highlightColor: c.accent100,
         child: Padding(padding: padding, child: child),
       ),
     );
@@ -92,23 +131,17 @@ class TagPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Organic.of(context);
     return Container(
       height: 34,
       padding: const EdgeInsets.only(left: 14, right: 4),
-      decoration: BoxDecoration(
-        color: Organic.accent2_600,
-        borderRadius: BorderRadius.circular(999),
-      ),
+      decoration: BoxDecoration(color: c.accent2_600, borderRadius: BorderRadius.circular(999)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             tag,
-            style: const TextStyle(
-              color: Organic.neutral100,
-              fontWeight: FontWeight.w600,
-              fontSize: 13,
-            ),
+            style: TextStyle(color: c.neutral100, fontWeight: FontWeight.w600, fontSize: 13),
           ),
           const SizedBox(width: 2),
           SizedBox.square(
@@ -119,11 +152,11 @@ class TagPill extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               child: InkWell(
                 onTap: onRemove,
-                hoverColor: Organic.accent2_700,
-                highlightColor: Organic.accent2_700,
+                hoverColor: c.accent2_700,
+                highlightColor: c.accent2_700,
                 child: Tooltip(
                   message: 'Remove tag',
-                  child: const Icon(Icons.close_rounded, size: 15, color: Organic.neutral100),
+                  child: Icon(Icons.close_rounded, size: 15, color: c.neutral100),
                 ),
               ),
             ),
@@ -134,11 +167,13 @@ class TagPill extends StatelessWidget {
   }
 }
 
-/// Plain rounded pill button (e.g. "+ Add tag").
+/// Plain rounded pill button (e.g. "+ Add tag"), optionally with a leading
+/// icon. Fills with the background colour unless given a [color].
 class PillButton extends StatelessWidget {
   final String label;
-  final VoidCallback onTap;
-  final Color color;
+  final VoidCallback? onTap;
+  final IconData? icon;
+  final Color? color;
   final double height;
   final TextStyle? style;
   final Color? borderColor;
@@ -147,7 +182,8 @@ class PillButton extends StatelessWidget {
     super.key,
     required this.label,
     required this.onTap,
-    this.color = Organic.bg,
+    this.icon,
+    this.color,
     this.height = 34,
     this.style,
     this.borderColor,
@@ -155,25 +191,36 @@ class PillButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: color,
-      shape: StadiumBorder(
-        side: borderColor == null ? BorderSide.none : BorderSide(color: borderColor!),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        hoverColor: Organic.accent100,
-        child: Container(
-          height: height,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Center(
-            widthFactor: 1,
-            child: Text(
-              label,
-              style:
-                  style ??
-                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Organic.text),
+    final c = Organic.of(context);
+    final textStyle = style ?? TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: c.text);
+    return Opacity(
+      opacity: onTap == null ? 0.45 : 1,
+      child: PressScale(
+        enabled: onTap != null,
+        scale: 0.96,
+        child: Material(
+          color: color ?? c.bg,
+          shape: StadiumBorder(
+            side: borderColor == null ? BorderSide.none : BorderSide(color: borderColor!),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            hoverColor: c.accent100,
+            highlightColor: c.accent100,
+            child: Container(
+              height: height,
+              padding: EdgeInsets.only(left: icon == null ? 14 : 10, right: 14),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, size: 17, color: textStyle.color),
+                    const SizedBox(width: 5),
+                  ],
+                  Text(label, style: textStyle),
+                ],
+              ),
             ),
           ),
         ),
@@ -185,7 +232,8 @@ class PillButton extends StatelessWidget {
 enum RoundButtonKind { primary, secondary, ghost }
 
 /// Circular icon button in the mocks' three styles: primary (accent fill),
-/// secondary (hairline outline) and ghost (no chrome, inherits colour).
+/// secondary (hairline outline) and ghost (no chrome). [color] recolours the
+/// icon, and the outline with it, for buttons that sit on a dark card.
 /// Disabled buttons fade to 45%, matching `.btn:disabled`.
 class RoundIconButton extends StatelessWidget {
   final IconData icon;
@@ -211,37 +259,42 @@ class RoundIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Organic.of(context);
+    final ink = color ?? c.text;
     final (bg, fg, side) = switch (kind) {
-      RoundButtonKind.primary => (Organic.accent, Organic.bg, BorderSide.none),
+      RoundButtonKind.primary => (c.accent, c.bg, BorderSide.none),
       RoundButtonKind.secondary => (
         Colors.transparent,
-        Organic.text,
-        const BorderSide(color: Organic.divider),
+        ink,
+        BorderSide(color: color == null ? c.divider : ink.withValues(alpha: 0.24)),
       ),
-      RoundButtonKind.ghost => (Colors.transparent, color ?? Organic.text, BorderSide.none),
+      RoundButtonKind.ghost => (Colors.transparent, ink, BorderSide.none),
     };
     return Opacity(
       opacity: onPressed == null ? 0.45 : 1,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(shape: BoxShape.circle, boxShadow: shadow),
-        child: Material(
-          color: bg,
-          shape: CircleBorder(side: side),
-          clipBehavior: Clip.antiAlias,
-          child: Tooltip(
-            message: tooltip,
-            child: InkWell(
-              onTap: onPressed,
-              hoverColor: kind == RoundButtonKind.primary
-                  ? Organic.accent600
-                  : (color ?? Organic.text).withValues(alpha: 0.07),
-              highlightColor: kind == RoundButtonKind.primary
-                  ? Organic.accent700
-                  : (color ?? Organic.text).withValues(alpha: 0.14),
-              splashColor: Colors.transparent,
-              child: Icon(icon, size: iconSize, color: fg),
+      child: PressScale(
+        enabled: onPressed != null,
+        scale: 0.9,
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(shape: BoxShape.circle, boxShadow: shadow),
+          child: Material(
+            color: bg,
+            shape: CircleBorder(side: side),
+            clipBehavior: Clip.antiAlias,
+            child: Tooltip(
+              message: tooltip,
+              child: InkWell(
+                onTap: onPressed,
+                hoverColor: kind == RoundButtonKind.primary
+                    ? c.accent600
+                    : ink.withValues(alpha: 0.07),
+                highlightColor: kind == RoundButtonKind.primary
+                    ? c.accent600
+                    : ink.withValues(alpha: 0.14),
+                child: Icon(icon, size: iconSize, color: fg),
+              ),
             ),
           ),
         ),
@@ -250,18 +303,19 @@ class RoundIconButton extends StatelessWidget {
   }
 }
 
-/// Paints a dashed rounded-rect outline, for the "+ New tag" placeholder tile.
+/// Paints a dashed rounded-rect outline, for the "+ New tag" placeholder
+/// tile. Neutral-400 unless given a [color].
 class DashedOutline extends StatelessWidget {
   final Widget child;
   final double radius;
-  final Color color;
+  final Color? color;
   final double strokeWidth;
 
   const DashedOutline({
     super.key,
     required this.child,
     required this.radius,
-    this.color = Organic.neutral400,
+    this.color,
     this.strokeWidth = 2,
   });
 
@@ -270,7 +324,7 @@ class DashedOutline extends StatelessWidget {
     return CustomPaint(
       foregroundPainter: _DashedRRectPainter(
         radius: radius,
-        color: color,
+        color: color ?? Organic.of(context).neutral400,
         strokeWidth: strokeWidth,
       ),
       child: child,
@@ -308,21 +362,37 @@ class _DashedRRectPainter extends CustomPainter {
   bool shouldRepaint(_DashedRRectPainter old) => old.color != color || old.radius != radius;
 }
 
-/// Centred muted message for a tab with nothing to show yet.
+/// What a tab shows when it has nothing yet: a still record, an optional
+/// heading, a muted line of [text] and an optional [action] button.
 class EmptyState extends StatelessWidget {
+  final String? title;
   final String text;
+  final Widget? action;
 
-  const EmptyState({super.key, required this.text});
+  const EmptyState({super.key, this.title, required this.text, this.action});
 
   @override
   Widget build(BuildContext context) {
+    final c = Organic.of(context);
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Organic.neutral700),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const RecordDisc(size: 116),
+            const SizedBox(height: 22),
+            if (title != null) ...[
+              Text(title!, textAlign: TextAlign.center, style: Organic.headingStyle(24)),
+              const SizedBox(height: 8),
+            ],
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: c.neutral700, height: 1.4),
+            ),
+            if (action != null) ...[const SizedBox(height: 20), action!],
+          ],
         ),
       ),
     );
@@ -337,11 +407,12 @@ Future<bool> showOrganicConfirm({
   required String body,
   required String action,
 }) async {
+  final c = Organic.of(context);
   final confirmed = await showDialog<bool>(
     context: context,
-    barrierColor: const Color(0x73201E1D),
+    barrierColor: Colors.black.withValues(alpha: c.isDark ? 0.65 : 0.45),
     builder: (context) => Dialog(
-      backgroundColor: Organic.bg,
+      backgroundColor: c.isDark ? c.surface : c.bg,
       insetPadding: const EdgeInsets.all(24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
       child: Padding(
@@ -352,7 +423,7 @@ Future<bool> showOrganicConfirm({
           children: [
             Text(title, style: Organic.headingStyle(22)),
             const SizedBox(height: 10),
-            Text(body, style: const TextStyle(fontSize: 14, color: Organic.neutral700)),
+            Text(body, style: TextStyle(fontSize: 14, color: c.neutral700)),
             const SizedBox(height: 18),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -397,7 +468,7 @@ class SectionHeader extends StatelessWidget {
         children: [
           Expanded(child: Text(title, style: Organic.headingStyle(20))),
           if (note != null)
-            Text(note!, style: const TextStyle(fontSize: 12, color: Organic.neutral700)),
+            Text(note!, style: TextStyle(fontSize: 12, color: Organic.of(context).neutral700)),
         ],
       ),
     );

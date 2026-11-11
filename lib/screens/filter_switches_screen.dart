@@ -30,7 +30,7 @@ class _FilterSwitchesScreenState extends State<FilterSwitchesScreen> {
   StreamSubscription<String>? _tagDeleted;
 
   /// The results last handed to the player, so it only hears about changes.
-  List<String> _sentMatches = const [];
+  List<String> _sentMatches = [];
 
   @override
   void initState() {
@@ -97,6 +97,7 @@ class _FilterSwitchesScreenState extends State<FilterSwitchesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = Organic.of(context);
     final libraryStore = context.watch<LibraryStore>();
     final queuePlayer = context.watch<QueuePlayer>();
     final matches = applyFilters(libraryStore.songs, _switches);
@@ -134,10 +135,7 @@ class _FilterSwitchesScreenState extends State<FilterSwitchesScreen> {
           Container(
             margin: const EdgeInsets.fromLTRB(14, 12, 14, 0),
             padding: const EdgeInsets.fromLTRB(10, 14, 10, 10),
-            decoration: BoxDecoration(
-              color: Organic.surface,
-              borderRadius: BorderRadius.circular(32),
-            ),
+            decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(32)),
             child: Row(
               children: [
                 for (final sw in _switches)
@@ -168,7 +166,7 @@ class _FilterSwitchesScreenState extends State<FilterSwitchesScreen> {
                   ? 'No tags yet. Tag some songs in the Tag tab first.'
                   : 'Patch a tag into a free fader · $slotsLeft of $_switchCount free'
                         '${slotsLeft < _switchCount ? ' · long-press a fader to free it' : ''}',
-              style: const TextStyle(fontSize: 12, color: Organic.neutral700),
+              style: TextStyle(fontSize: 12, color: c.neutral700),
             ),
           ),
           Padding(
@@ -180,11 +178,11 @@ class _FilterSwitchesScreenState extends State<FilterSwitchesScreen> {
                 for (final tag in unassigned)
                   Material(
                     color: Colors.transparent,
-                    shape: const StadiumBorder(side: BorderSide(color: Organic.accent)),
+                    shape: StadiumBorder(side: BorderSide(color: c.accent)),
                     clipBehavior: Clip.antiAlias,
                     child: InkWell(
                       onTap: () => _toggleTag(tag),
-                      hoverColor: Organic.accent100,
+                      hoverColor: c.accent100,
                       child: Container(
                         height: 28,
                         padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -192,11 +190,7 @@ class _FilterSwitchesScreenState extends State<FilterSwitchesScreen> {
                           widthFactor: 1,
                           child: Text(
                             '+ $tag',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              letterSpacing: 0.24,
-                              color: Organic.accent,
-                            ),
+                            style: TextStyle(fontSize: 12, letterSpacing: 0.24, color: c.accent),
                           ),
                         ),
                       ),
@@ -232,13 +226,14 @@ class _Fader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Organic.of(context);
     final tag = sw.tag;
     final hasTag = tag != null;
     final (knobTop, knobColor, knobText, spoken) = switch (sw.position) {
-      _ when !hasTag => (42.0, Organic.neutral300, '', 'empty'),
-      SwitchPosition.require => (3.0, Organic.accent2_600, 'ONLY', 'only'),
-      SwitchPosition.neutral => (42.0, Organic.neutral500, 'ANY', 'any'),
-      SwitchPosition.exclude => (81.0, Organic.accent, 'NO', 'never'),
+      _ when !hasTag => (42.0, c.neutral300, '', 'empty'),
+      SwitchPosition.require => (3.0, c.accent2_600, 'ONLY', 'only'),
+      SwitchPosition.neutral => (42.0, c.neutral500, 'ANY', 'any'),
+      SwitchPosition.exclude => (81.0, c.accent, 'NO', 'never'),
     };
 
     return Semantics(
@@ -261,10 +256,10 @@ class _Fader extends StatelessWidget {
                   width: 42,
                   height: _trackHeight,
                   decoration: BoxDecoration(
-                    color: Organic.neutral200,
+                    color: c.neutral200,
                     borderRadius: BorderRadius.circular(999),
                     // Approximates the mock's inset shadow with a darker rim.
-                    border: Border.all(color: const Color(0x142E2B25)),
+                    border: Border.all(color: c.divider.withValues(alpha: 0.08)),
                   ),
                   child: Stack(
                     children: [
@@ -281,14 +276,14 @@ class _Fader extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: knobColor,
                             shape: BoxShape.circle,
-                            boxShadow: Organic.shadowMd,
+                            boxShadow: c.shadowMd,
                           ),
                           child: Text(
                             knobText,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: Organic.neutral100,
+                              color: c.neutral100,
                             ),
                           ),
                         ),
@@ -323,11 +318,12 @@ class _MixSentence extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Organic.of(context);
     final required = switches.where((s) => s.tag != null && s.position == SwitchPosition.require);
     final anyOf = switches.where((s) => s.tag != null && s.position == SwitchPosition.neutral);
     final excluded = switches.where((s) => s.tag != null && s.position == SwitchPosition.exclude);
     final style = Organic.headingStyle(21, height: 1.65);
-    const muted = TextStyle(color: Organic.neutral500);
+    final muted = TextStyle(color: c.neutral500);
 
     InlineSpan chip(FilterSwitch sw) {
       final excluded = sw.position == SwitchPosition.exclude;
@@ -337,9 +333,9 @@ class _MixSentence extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 3),
           child: Material(
             color: switch (sw.position) {
-              SwitchPosition.require => Organic.accent2_600,
-              SwitchPosition.neutral => Organic.neutral500,
-              SwitchPosition.exclude => Organic.accent,
+              SwitchPosition.require => c.accent2_600,
+              SwitchPosition.neutral => c.neutral500,
+              SwitchPosition.exclude => c.accent,
             },
             shape: const StadiumBorder(),
             clipBehavior: Clip.antiAlias,
@@ -352,9 +348,9 @@ class _MixSentence extends StatelessWidget {
                   widthFactor: 1,
                   child: Text(
                     sw.tag!,
-                    style: Organic.headingStyle(17, color: Organic.neutral100, height: 1).copyWith(
+                    style: Organic.headingStyle(17, color: c.neutral100, height: 1).copyWith(
                       decoration: excluded ? TextDecoration.lineThrough : null,
-                      decorationColor: Organic.neutral100,
+                      decorationColor: c.neutral100,
                       decorationThickness: 2,
                     ),
                   ),
@@ -371,12 +367,12 @@ class _MixSentence extends StatelessWidget {
         style: style,
         children: [
           const TextSpan(text: 'Play songs tagged '),
-          if (required.isEmpty && anyOf.isEmpty) const TextSpan(text: 'anything', style: muted),
+          if (required.isEmpty && anyOf.isEmpty) TextSpan(text: 'anything', style: muted),
           for (final sw in required) chip(sw),
           if (anyOf.isNotEmpty) TextSpan(text: required.isEmpty ? 'any of ' : ' and any of '),
           for (final sw in anyOf) chip(sw),
           const TextSpan(text: ' but never '),
-          if (excluded.isEmpty) const TextSpan(text: 'nothing', style: muted),
+          if (excluded.isEmpty) TextSpan(text: 'nothing', style: muted),
           for (final sw in excluded) chip(sw),
           const TextSpan(text: '.'),
         ],
@@ -400,10 +396,11 @@ class _ResultsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Organic.of(context);
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 16, 14, 0),
       padding: const EdgeInsets.fromLTRB(16, 6, 6, 6),
-      decoration: BoxDecoration(color: Organic.surface, borderRadius: BorderRadius.circular(30)),
+      decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(30)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -419,7 +416,7 @@ class _ResultsCard extends StatelessWidget {
                       children: [
                         Text(
                           '${matches.length}',
-                          style: Organic.headingStyle(30, height: 1, color: Organic.accent700),
+                          style: Organic.headingStyle(30, height: 1, color: c.accent700),
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -449,16 +446,18 @@ class _ResultsCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(0, 4, 10, 8),
               child: matches.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Text(
                         'No songs match this combination.',
-                        style: TextStyle(fontSize: 13, color: Organic.neutral700),
+                        style: TextStyle(fontSize: 13, color: c.neutral700),
                       ),
                     )
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [for (var i = 0; i < matches.length; i++) _matchRow(matches[i], i)],
+                      children: [
+                        for (var i = 0; i < matches.length; i++) _matchRow(c, matches[i], i),
+                      ],
                     ),
             ),
         ],
@@ -466,7 +465,7 @@ class _ResultsCard extends StatelessWidget {
     );
   }
 
-  Widget _matchRow(Song song, int index) {
+  Widget _matchRow(OrganicColors c, Song song, int index) {
     final isCurrent = queuePlayer.currentSong?.filePath == song.filePath;
     return InkWell(
       onTap: () {
@@ -478,8 +477,8 @@ class _ResultsCard extends StatelessWidget {
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: Organic.divider)),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: c.divider)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -489,14 +488,11 @@ class _ResultsCard extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
-                color: isCurrent ? Organic.accent700 : Organic.text,
+                color: isCurrent ? c.accent700 : c.text,
               ),
             ),
             if (song.tags.isNotEmpty)
-              Text(
-                song.tags.join(', '),
-                style: const TextStyle(fontSize: 12, color: Organic.neutral700),
-              ),
+              Text(song.tags.join(', '), style: TextStyle(fontSize: 12, color: c.neutral700)),
           ],
         ),
       ),

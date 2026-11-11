@@ -13,9 +13,10 @@ String formatDuration(Duration d) {
 /// time on the left and time remaining on the right. Tap anywhere on the
 /// track to jump there, or drag the thumb.
 ///
-/// [dark] is the slimmer variant for dark cards (the Tag tab's now-playing
-/// card), styled after the media notification mock: light fill on a brown
-/// track, and total length on the right instead of time remaining.
+/// [dark] is the slimmer variant for the dark cards (the Tag tab's
+/// transport), styled after the media notification mock: a peach fill on a
+/// translucent track, and total length on the right instead of time
+/// remaining.
 class SeekBar extends StatefulWidget {
   final QueuePlayer queuePlayer;
   final bool dark;
@@ -42,6 +43,7 @@ class _SeekBarState extends State<SeekBar> {
 
   @override
   Widget build(BuildContext context) {
+    final c = Organic.of(context);
     final queuePlayer = widget.queuePlayer;
     final duration = queuePlayer.duration;
     final fraction = _dragFraction ?? queuePlayer.progress;
@@ -50,10 +52,10 @@ class _SeekBarState extends State<SeekBar> {
     final dark = widget.dark;
     final trackHeight = dark ? 6.0 : 8.0;
     final thumbSize = dark ? 14.0 : 20.0;
-    final fillColor = dark ? Organic.accent200 : Organic.accent;
+    final fillColor = dark ? c.cardAccent : c.accent;
     final labelStyle = dark
-        ? TextStyle(fontSize: 11, color: Organic.neutral100.withValues(alpha: 0.75))
-        : const TextStyle(fontSize: 12, color: Organic.neutral700);
+        ? TextStyle(fontSize: 11, color: c.onCard.withValues(alpha: 0.75))
+        : TextStyle(fontSize: 12, color: c.neutral700);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -82,7 +84,7 @@ class _SeekBarState extends State<SeekBar> {
                     : null,
                 onHorizontalDragCancel: () => setState(() => _dragFraction = null),
                 child: SizedBox(
-                  height: dark ? 18 : 24,
+                  height: dark ? 22 : 24,
                   child: Stack(
                     clipBehavior: Clip.none,
                     alignment: Alignment.centerLeft,
@@ -90,7 +92,7 @@ class _SeekBarState extends State<SeekBar> {
                       Container(
                         height: trackHeight,
                         decoration: BoxDecoration(
-                          color: dark ? Organic.accent600 : Organic.neutral300,
+                          color: dark ? c.onCard.withValues(alpha: 0.18) : c.neutral300,
                           borderRadius: BorderRadius.circular(999),
                         ),
                       ),
@@ -108,14 +110,11 @@ class _SeekBarState extends State<SeekBar> {
                           width: thumbSize,
                           height: thumbSize,
                           decoration: BoxDecoration(
-                            color: dark ? Organic.neutral100 : Organic.accent,
+                            color: dark ? c.onCard : c.accent,
                             shape: BoxShape.circle,
                             boxShadow: dark
                                 ? null
-                                : const [
-                                    BoxShadow(color: Organic.bg, spreadRadius: 4),
-                                    ...Organic.shadowSm,
-                                  ],
+                                : [BoxShadow(color: c.bg, spreadRadius: 4), ...c.shadowSm],
                           ),
                         ),
                       ),

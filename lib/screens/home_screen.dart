@@ -17,9 +17,21 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   int _index = 0;
 
+  /// Runs each time the tab changes: the new tab fades and settles in.
+  late final AnimationController _arrive = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 240),
+    value: 1,
+  );
+  late final Animation<double> _arriveCurve = CurvedAnimation(
+    parent: _arrive,
+    curve: Curves.easeOutCubic,
+  );
+
+  static const _playerTab = 1;
   static const _tabs = ['Library', 'Player', 'Tag', 'Mix'];
 
   static const _screens = [
@@ -29,6 +41,19 @@ class _HomeScreenState extends State<HomeScreen> {
     FilterSwitchesScreen(),
   ];
 
+  void _select(int index) {
+    if (index == _index) return;
+    HapticFeedback.selectionClick();
+    setState(() => _index = index);
+    _arrive.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _arrive.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final queuePlayer = context.watch<QueuePlayer>();
@@ -36,48 +61,53 @@ class _HomeScreenState extends State<HomeScreen> {
     // dock there too would just duplicate it.
     final showMiniPlayer = _index != 1 && _index != 2;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
-      child: Scaffold(
-        body: Stack(
-          children: [
-            // Phones get the mocks' layout edge to edge; on a desktop window
-            // the column stays phone-width rather than stretching.
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
-                child: IndexedStack(index: _index, children: _screens),
+    return Scaffold(
+      body: Stack(
+        children: [
+          // Phones get the mocks' layout edge to edge; on a desktop window
+          // the column stays phone-width rather than stretching.
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: FadeTransition(
+                opacity: _arriveCurve,
+                child: SlideTransition(
+                  position: Tween(
+                    begin: const Offset(0, 0.012),
+                    end: Offset.zero,
+                  ).animate(_arriveCurve),
+                  child: IndexedStack(index: _index, children: _screens),
+                ),
               ),
             ),
-            if (showMiniPlayer)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 12,
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 560),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: NowPlayingBar(queuePlayer: queuePlayer),
+          ),
+          if (showMiniPlayer)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 12,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: NowPlayingBar(
+                      queuePlayer: queuePlayer,
+                      onOpen: () => _select(_playerTab),
                     ),
                   ),
                 ),
               ),
-          ],
-        ),
-        bottomNavigationBar: _TabBar(
-          tabs: _tabs,
-          selected: _index,
-          onSelected: (i) => setState(() => _index = i),
-        ),
+            ),
+        ],
       ),
+      bottomNavigationBar: _TabBar(tabs: _tabs, selected: _index, onSelected: _select),
     );
   }
 }
 
 /// Text-only tab bar: heading-font labels, the active one in accent with an
-/// underline.
+/// underline that grows in under it.
 class _TabBar extends StatelessWidget {
   final List<String> tabs;
   final int selected;
@@ -87,47 +117,62 @@ class _TabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Organic.of(context);
     return ColoredBox(
-      color: Organic.bg,
+      color: c.bg,
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          height: 62,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (var i = 0; i < tabs.length; i++)
-                Semantics(
-                  selected: i == selected,
-                  button: true,
-                  child: InkWell(
-                    onTap: () => onSelected(i),
-                    borderRadius: BorderRadius.circular(16),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                      child: Container(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        decoration: BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(
-                              color: i == selected ? Organic.accent : Colors.transparent,
-                              width: 3,
+        child: Center(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: SizedBox(
+              height: 62,
+              child: Row(
+                children: [
+                  for (var i = 0; i < tabs.length; i++)
+                    // Each tab takes a full quarter of the bar, so the whole
+                    // strip is a tap target, not just the word.
+                    Expanded(
+                      child: Semantics(
+                        selected: i == selected,
+                        button: true,
+                        child: InkWell(
+                          onTap: () => onSelected(i),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                AnimatedDefaultTextStyle(
+                                  duration: const Duration(milliseconds: 200),
+                                  style: Organic.headingStyle(
+                                    16,
+                                    height: 1.2,
+                                    color: i == selected ? c.accent700 : c.neutral600,
+                                  ),
+                                  child: Text(tabs[i]),
+                                ),
+                                const SizedBox(height: 3),
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 240),
+                                  curve: Curves.easeOutCubic,
+                                  height: 3,
+                                  width: i == selected ? 26 : 0,
+                                  decoration: BoxDecoration(
+                                    color: c.accent,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ),
-                        child: Text(
-                          tabs[i],
-                          style: Organic.headingStyle(
-                            16,
-                            height: 1.2,
-                            color: i == selected ? Organic.accent700 : Organic.neutral600,
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-            ],
+                ],
+              ),
+            ),
           ),
         ),
       ),

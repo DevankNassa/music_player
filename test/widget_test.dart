@@ -5,6 +5,8 @@ import 'package:insta_playlist/main.dart';
 import 'package:insta_playlist/models/song.dart';
 import 'package:insta_playlist/state/library_store.dart';
 import 'package:insta_playlist/state/tag_pad_settings.dart';
+import 'package:insta_playlist/state/theme_settings.dart';
+import 'package:insta_playlist/theme/organic.dart';
 
 void main() {
   testWidgets('App launches to the library tab', (WidgetTester tester) async {
@@ -94,5 +96,25 @@ void libraryTests() {
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
     expect(tagPad.pinned, ['rain']);
+  });
+
+  testWidgets('Settings switches between the light and dark themes', (WidgetTester tester) async {
+    final theme = ThemeSettings();
+    await tester.pumpWidget(InstantPlaylistApp(themeSettings: theme));
+    OrganicColors palette() => Organic.of(tester.element(find.text('Appearance')));
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    expect(theme.mode, ThemeMode.system);
+
+    await tester.tap(find.text('Dark'));
+    await tester.pumpAndSettle();
+    expect(theme.mode, ThemeMode.dark);
+    expect(palette().bg, OrganicColors.dark.bg);
+
+    await tester.tap(find.text('Light'));
+    await tester.pumpAndSettle();
+    expect(theme.mode, ThemeMode.light);
+    expect(palette().bg, OrganicColors.light.bg);
   });
 }

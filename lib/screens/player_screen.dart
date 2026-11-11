@@ -35,6 +35,7 @@ class PlayerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Organic.of(context);
     final libraryStore = context.watch<LibraryStore>();
     final queuePlayer = context.watch<QueuePlayer>();
     final library = libraryStore.songs;
@@ -44,8 +45,10 @@ class PlayerScreen extends StatelessWidget {
       if (library.isEmpty) {
         return const EmptyState(text: 'Nothing playing. Add songs in the Library tab.');
       }
-      return Center(
-        child: FilledButton(
+      return EmptyState(
+        title: 'Nothing playing',
+        text: 'Start with the whole library, or pick a song in the Library tab.',
+        action: FilledButton(
           onPressed: () => queuePlayer.setQueue(library),
           child: const Text('Play library'),
         ),
@@ -61,7 +64,11 @@ class PlayerScreen extends StatelessWidget {
         Positioned(
           right: -70,
           top: _discTop,
-          child: PlayerDisc(size: _discSize, progress: queuePlayer.progress),
+          child: PlayerDisc(
+            size: _discSize,
+            progress: queuePlayer.progress,
+            spinning: queuePlayer.isPlaying,
+          ),
         ),
         SafeArea(
           bottom: false,
@@ -73,12 +80,7 @@ class PlayerScreen extends StatelessWidget {
                 child: Text(
                   'Now playing · ${queuePlayer.queueIndex + 1} of ${queuePlayer.queueLength}'
                       .toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    letterSpacing: 1.1,
-                    fontWeight: FontWeight.w600,
-                    color: Organic.accent700,
-                  ),
+                  style: Organic.eyebrowStyle(c.accent700),
                 ),
               ),
               Expanded(
@@ -104,7 +106,7 @@ class PlayerScreen extends StatelessWidget {
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
                                 current.artist!,
-                                style: const TextStyle(fontSize: 15, color: Organic.neutral700),
+                                style: TextStyle(fontSize: 15, color: c.neutral700),
                               ),
                             ),
                           const SizedBox(height: 20),
@@ -140,9 +142,10 @@ class _TagsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Organic.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
-      decoration: BoxDecoration(color: Organic.surface, borderRadius: BorderRadius.circular(28)),
+      decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(28)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -153,7 +156,7 @@ class _TagsCard extends StatelessWidget {
               Expanded(child: Text('Tags', style: Organic.headingStyle(18))),
               Text(
                 '${tags.length} on this song',
-                style: const TextStyle(fontSize: 12, color: Organic.neutral700),
+                style: TextStyle(fontSize: 12, color: c.neutral700),
               ),
             ],
           ),
@@ -165,12 +168,9 @@ class _TagsCard extends StatelessWidget {
             children: [
               for (final tag in tags) TagPill(tag: tag, onRemove: () => onRemove(tag)),
               if (tags.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(right: 4),
-                  child: Text(
-                    'No tags yet.',
-                    style: TextStyle(fontSize: 13, color: Organic.neutral700),
-                  ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Text('No tags yet.', style: TextStyle(fontSize: 13, color: c.neutral700)),
                 ),
               PillButton(label: '+ Add tag', onTap: onAdd),
             ],
@@ -197,6 +197,7 @@ class _AddTagSheetState extends State<_AddTagSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final c = Organic.of(context);
     return ListView(
       shrinkWrap: true,
       children: [
@@ -220,8 +221,8 @@ class _AddTagSheetState extends State<_AddTagSheet> {
                 Container(
                   width: 32,
                   height: 32,
-                  decoration: const BoxDecoration(color: Organic.accent, shape: BoxShape.circle),
-                  child: const Icon(Icons.add_rounded, size: 20, color: Organic.neutral100),
+                  decoration: BoxDecoration(color: c.accent, shape: BoxShape.circle),
+                  child: Icon(Icons.add_rounded, size: 20, color: c.neutral100),
                 ),
                 const SizedBox(width: 12),
                 const Text('New tag…', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),

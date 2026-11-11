@@ -16,6 +16,7 @@ import 'services/media_notification_handler.dart';
 import 'state/library_store.dart';
 import 'state/queue_player.dart';
 import 'state/tag_pad_settings.dart';
+import 'state/theme_settings.dart';
 import 'theme/organic.dart';
 
 Future<void> main() async {
@@ -61,11 +62,14 @@ Future<void> main() async {
   AppLifecycleListener(onResume: libraryStore.rescanFolders);
   final tagPadSettings = TagPadSettings();
   await tagPadSettings.load();
+  final themeSettings = ThemeSettings();
+  await themeSettings.load();
   runApp(
     InstantPlaylistApp(
       queuePlayer: queuePlayer,
       libraryStore: libraryStore,
       tagPadSettings: tagPadSettings,
+      themeSettings: themeSettings,
     ),
   );
 }
@@ -74,8 +78,15 @@ class InstantPlaylistApp extends StatelessWidget {
   final QueuePlayer? queuePlayer;
   final LibraryStore? libraryStore;
   final TagPadSettings? tagPadSettings;
+  final ThemeSettings? themeSettings;
 
-  const InstantPlaylistApp({super.key, this.queuePlayer, this.libraryStore, this.tagPadSettings});
+  const InstantPlaylistApp({
+    super.key,
+    this.queuePlayer,
+    this.libraryStore,
+    this.tagPadSettings,
+    this.themeSettings,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -93,12 +104,27 @@ class InstantPlaylistApp extends StatelessWidget {
           ChangeNotifierProvider.value(value: tagPadSettings!)
         else
           ChangeNotifierProvider(create: (_) => TagPadSettings()),
+        if (themeSettings != null)
+          ChangeNotifierProvider.value(value: themeSettings!)
+        else
+          ChangeNotifierProvider(create: (_) => ThemeSettings()),
       ],
-      child: MaterialApp(
-        title: 'Instant Playlist',
-        // The Organic design system only defines a light palette.
-        theme: organicTheme(),
-        home: const HomeScreen(),
+      child: Consumer<ThemeSettings>(
+        builder: (context, theme, _) => MaterialApp(
+          title: 'Instant Playlist',
+          theme: organicTheme(Brightness.light),
+          darkTheme: organicTheme(Brightness.dark),
+          themeMode: theme.mode,
+          // Switching theme dissolves from one palette to the other.
+          themeAnimationDuration: const Duration(milliseconds: 320),
+          themeAnimationCurve: Curves.easeInOut,
+          // Status and navigation bar icons follow the theme on every route.
+          builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+            value: organicOverlayStyle(Organic.of(context)),
+            child: child!,
+          ),
+          home: const HomeScreen(),
+        ),
       ),
     );
   }

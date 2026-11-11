@@ -13,6 +13,7 @@ class PlaybackControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Organic.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -30,7 +31,7 @@ class PlaybackControls extends StatelessWidget {
           kind: RoundButtonKind.primary,
           size: 78,
           iconSize: 36,
-          shadow: Organic.shadowMd,
+          shadow: c.shadowMd,
           onPressed: queuePlayer.togglePlayPause,
         ),
         const SizedBox(width: 22),
